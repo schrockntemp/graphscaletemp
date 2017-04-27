@@ -13,6 +13,7 @@ from graphscale.utils import (
 
 from graphscale.kvetch.kvetch import (
     KvetchShard,
+    KvetchShardIndex,
 )
 
 def data_to_body(data):
@@ -148,9 +149,9 @@ def sync_kv_get_objects(shard, ids):
 def sync_kv_index_get_all(shard, index, value):
     param_check(shard, KvetchShard, 'shard')
     param_check(index, KvetchShardIndex, 'index')
-    return execute_coro(index.gen_all(shard, value))
+    return execute_coro(shard.gen_all(index, value))
 
-class KvetchShardIndex:
+class KvetchDbShardIndex(KvetchShardIndex):
     def __init__(self, *, indexed_attr, indexed_sql_type, index_name):
         param_check(indexed_attr, str, 'indexed_attr')
         param_check(indexed_sql_type, str, 'indexed_sql_type')
@@ -168,18 +169,6 @@ class KvetchShardIndex:
 
     def indexed_sql_type(self):
         return self._indexed_sql_type
-
-    async def gen_all(self, shard, value):
-        entries = _kv_shard_get_index_entries(
-            shard_conn=shard.conn(),
-            index_name=self.index_name(),
-            index_column=self.indexed_attr(),
-            index_value=value,
-            target_column='entity_id',
-        )
-        ids = [UUID(bytes=entry['entity_id']) for entry in entries]
-        objs = await shard.gen_objects(ids)
-        return objs
 
 class KvetchDbShard(KvetchShard):
     def __init__(self, *, pool, indexes):
@@ -210,13 +199,7 @@ class KvetchDbShard(KvetchShard):
         return _kv_shard_get_objects(self.conn(), ids)
 
     async def gen_insert_object(self, type_id, data):
-        param_check(type_id, int, 'type_id')
-        param_check(data, dict, 'data')
-        if 'id' in data:
-            raise ValueError('Cannot specify id')
-
-        if '__type_id' in data:
-            raise ValueError('Cannot specify __type_id')
+        self.check_insert_object_vars(type_id, data)
         new_id = _kv_shard_insert_object(self.conn(), type_id, data)
 
         for index_name, index in self._index_dict.items():
@@ -232,3 +215,15 @@ class KvetchDbShard(KvetchShard):
                 )
 
         return new_id
+
+    async def gen_all(self, index, value):
+        entries = _kv_shard_get_index_entries(
+            shard_conn=self.conn(),
+            index_name=index.index_name(),
+            index_column=index.indexed_attr(),
+            index_value=value,
+            target_column='entity_id',
+        )
+        ids = [UUID(bytes=entry['entity_id']) for entry in entries]
+        objs = await self.gen_objects(ids)
+        return objs

@@ -11,7 +11,7 @@ import pytest
 from graphscale.kvetch.kvetch_db import *
 from graphscale.kvetch.kvetch_dbshard import (
     KvetchDbShard,
-    KvetchShardIndex,
+    KvetchDbShardIndex,
     KvetchDbSingleConnectionPool,
     sync_kv_insert_object,
     sync_kv_get_object,
@@ -21,6 +21,7 @@ from graphscale.kvetch.kvetch_dbshard import (
 
 from graphscale.kvetch.kvetch_memshard import (
     KvetchMemShard,
+    KvetchMemShardIndex,
 )
 
 from graphscale.kvetch.kvetch_dbschema import (
@@ -46,25 +47,24 @@ from graphscale.kvetch.kvetch_dbschema import (
 
 @pytest.fixture
 def test_shard_single_index():
-    # related_index = KvetchShardIndex(
-    #     indexed_attr='related_id',
-    #     indexed_sql_type='BINARY(16)',
-    #     index_name='related_id_index',
-    # )
+    related_index = KvetchMemShardIndex(
+        indexed_attr='related_id',
+        index_name='related_id_index',
+    )
     # shard = KvetchDbShard(pool=KvetchDbSingleConnectionPool(magnus_conn), indexes=[related_index])
-    shard = KvetchMemShard(indexes=[])
+    shard = KvetchMemShard(indexes=[related_index])
     # drop_shard_db_tables(shard)
     # init_shard_db_tables(shard)
     yield shard
 
 @pytest.fixture
 def test_shard_double_index():
-    related_index = KvetchShardIndex(
+    related_index = KvetchDbShardIndex(
         indexed_attr='related_id',
         indexed_sql_type='BINARY(16)',
         index_name='related_id_index',
     )
-    num_index = KvetchShardIndex(
+    num_index = KvetchDbShardIndex(
         indexed_attr='num',
         indexed_sql_type='INT',
         index_name='num_index'
@@ -77,9 +77,9 @@ def test_shard_double_index():
     init_shard_db_tables(shard)
     yield shard
 
-# def test_data_to_body():
-#     body = data_to_body({'name' : 'Joe'})
-#     assert body is not None
+def test_data_to_body():
+    body = data_to_body({'name' : 'Joe'})
+    assert body is not None
 
 def test_object_insert(test_shard_single_index):
     data = {'num' : 2}
@@ -94,68 +94,65 @@ def test_object_insert_get(test_shard_single_index):
     assert new_data['num'] == 3
     assert new_data['__type_id'] == 1000
 
-# def test_objects_insert_get(test_shard_single_index):
-#     data_one = {'num' : 4}
-#     data_two = {'num' : 5}
-#     id_one = sync_kv_insert_object(test_shard_single_index, 1000, data_one)
-#     id_two = sync_kv_insert_object(test_shard_single_index, 1000, data_two)
-#     obj_dict = sync_kv_get_objects(test_shard_single_index, [id_one, id_two])
-#     assert len(obj_dict) == 2
-#     assert obj_dict[id_one]['id'] == id_one
-#     assert obj_dict[id_one]['num'] == 4
-#     assert obj_dict[id_two]['id'] == id_two
-#     assert obj_dict[id_two]['num'] == 5
+def test_objects_insert_get(test_shard_single_index):
+    data_one = {'num' : 4}
+    data_two = {'num' : 5}
+    id_one = sync_kv_insert_object(test_shard_single_index, 1000, data_one)
+    id_two = sync_kv_insert_object(test_shard_single_index, 1000, data_two)
+    obj_dict = sync_kv_get_objects(test_shard_single_index, [id_one, id_two])
+    assert len(obj_dict) == 2
+    assert obj_dict[id_one]['id'] == id_one
+    assert obj_dict[id_one]['num'] == 4
+    assert obj_dict[id_two]['id'] == id_two
+    assert obj_dict[id_two]['num'] == 5
 
-# def test_get_zero_objects(test_shard_single_index):
-#     with pytest.raises(ValueError):
-#         sync_kv_get_objects(test_shard_single_index, [])
+def test_get_zero_objects(test_shard_single_index):
+    with pytest.raises(ValueError):
+        sync_kv_get_objects(test_shard_single_index, [])
 
-# def test_object_insert_id(test_shard_single_index):
-#     with pytest.raises(ValueError):
-#         sync_kv_insert_object(test_shard_single_index, 1000, None)
-#     with pytest.raises(ValueError):
-#         sync_kv_insert_object(test_shard_single_index, 1000, [])
-#     with pytest.raises(ValueError):
-#         sync_kv_insert_object(test_shard_single_index, 1000, {'id' : 234})
-#     with pytest.raises(ValueError):
-#         sync_kv_insert_object(test_shard_single_index, 1000, {'__type_id' : 234})
-#     with pytest.raises(ValueError):
-#         sync_kv_insert_object(test_shard_single_index, None, {'name' : 'Joe'})
+def test_object_insert_id(test_shard_single_index):
+    with pytest.raises(ValueError):
+        sync_kv_insert_object(test_shard_single_index, 1000, None)
+    with pytest.raises(ValueError):
+        sync_kv_insert_object(test_shard_single_index, 1000, [])
+    with pytest.raises(ValueError):
+        sync_kv_insert_object(test_shard_single_index, 1000, {'id' : 234})
+    with pytest.raises(ValueError):
+        sync_kv_insert_object(test_shard_single_index, 1000, {'__type_id' : 234})
+    with pytest.raises(ValueError):
+        sync_kv_insert_object(test_shard_single_index, None, {'name' : 'Joe'})
 
-# def test_null_shard():
-#     with pytest.raises(ValueError):
-#         sync_kv_insert_object(None, 1000, {'num' : 234})
-#     with pytest.raises(ValueError):
-#         sync_kv_get_object(None, uuid4())
-#     with pytest.raises(ValueError):
-#         sync_kv_get_objects(None, [uuid4()])
+def test_null_shard():
+    with pytest.raises(ValueError):
+        sync_kv_insert_object(None, 1000, {'num' : 234})
+    with pytest.raises(ValueError):
+        sync_kv_get_object(None, uuid4())
+    with pytest.raises(ValueError):
+        sync_kv_get_objects(None, [uuid4()])
 
-# def test_bad_args(test_shard_single_index):
-#     with pytest.raises(ValueError):
-#         sync_kv_get_object(test_shard_single_index, None)
+def test_bad_args(test_shard_single_index):
+    with pytest.raises(ValueError):
+        sync_kv_get_object(test_shard_single_index, None)
 
-# def insert_test_edge(context, id_from, id_to, data=None):
-#     return kv_insert_index_entry(context, 'test', id_from, id_to, data)
+def test_insert_index_entry(test_shard_single_index):
+    data_one = {'num' : 4}
+    id_one = sync_kv_insert_object(test_shard_single_index, 1000, data_one)
+    data_two = {'num' : 5, 'related_id' : id_one}
+    sync_kv_insert_object(test_shard_single_index, 1000, data_two)
 
-# def test_insert_edge(test_shard_single_index):
-#     data_one = {'num' : 4}
-#     id_one = sync_kv_insert_object(test_shard_single_index, 1000, data_one)
-#     data_two = {'num' : 5, 'related_id' : id_one}
-#     sync_kv_insert_object(test_shard_single_index, 1000, data_two)
-
-# def test_single_index(test_shard_single_index):
-#     data_one = {'num' : 4}
-#     id_one = sync_kv_insert_object(test_shard_single_index, 1000, data_one)
-#     data_two = {'num' : 5, 'related_id' : id_one}
-#     id_two = sync_kv_insert_object(test_shard_single_index, 1000, data_two)
-#     data_three = {'num' : 6, 'related_id' : None}
-#     sync_kv_insert_object(test_shard_single_index, 1000, data_three)
-#     related_index = test_shard_single_index.index_by_name('related_id_index')
-#     target_objs = sync_kv_index_get_all(test_shard_single_index, related_index, id_one)
-#     assert len(target_objs) == 1
-#     target_obj = target_objs[id_two]
-#     assert target_obj['id'] == id_two
-#     assert target_obj['num'] == 5
+def test_single_index(test_shard_single_index):
+    data_one = {'num' : 4}
+    id_one = sync_kv_insert_object(test_shard_single_index, 1000, data_one)
+    data_two = {'num' : 5, 'related_id' : id_one}
+    id_two = sync_kv_insert_object(test_shard_single_index, 1000, data_two)
+    data_three = {'num' : 6, 'related_id' : None}
+    sync_kv_insert_object(test_shard_single_index, 1000, data_three)
+    related_index = test_shard_single_index.index_by_name('related_id_index')
+    target_objs = sync_kv_index_get_all(test_shard_single_index, related_index, id_one)
+    assert len(target_objs) == 1
+    target_obj = target_objs[id_two]
+    assert target_obj['id'] == id_two
+    assert target_obj['num'] == 5
 
 # def sort_ids(ids):
 #     return sorted(ids, key=lambda id_: id_.bytes)
