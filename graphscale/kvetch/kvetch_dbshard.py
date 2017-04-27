@@ -11,6 +11,10 @@ from graphscale.utils import (
     async_array
 )
 
+from graphscale.kvetch.kvetch import (
+    KvetchShard,
+)
+
 def data_to_body(data):
     return zlib.compress(pickle.dumps(data))
 
@@ -130,19 +134,19 @@ class KvetchDbSingleConnectionPool:
         return self._conn
 
 def sync_kv_insert_object(shard, type_id, data):
-    param_check(shard, KvetchDbShard, 'shard')
+    param_check(shard, KvetchShard, 'shard')
     return execute_coro(shard.gen_insert_object(type_id, data))
 
 def sync_kv_get_object(shard, id_):
-    param_check(shard, KvetchDbShard, 'shard')
+    param_check(shard, KvetchShard, 'shard')
     return execute_coro(shard.gen_object(id_))
 
 def sync_kv_get_objects(shard, ids):
-    param_check(shard, KvetchDbShard, 'shard')
+    param_check(shard, KvetchShard, 'shard')
     return execute_coro(shard.gen_objects(ids))
 
 def sync_kv_index_get_all(shard, index, value):
-    param_check(shard, KvetchDbShard, 'shard')
+    param_check(shard, KvetchShard, 'shard')
     param_check(index, KvetchShardIndex, 'index')
     return execute_coro(index.gen_all(shard, value))
 
@@ -177,7 +181,7 @@ class KvetchShardIndex:
         objs = await shard.gen_objects(ids)
         return objs
 
-class KvetchDbShard:
+class KvetchDbShard(KvetchShard):
     def __init__(self, *, pool, indexes):
         self._pool = pool
         self._index_dict = dict(zip([index.index_name() for index in indexes], indexes))

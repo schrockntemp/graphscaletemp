@@ -3,7 +3,11 @@ from uuid import UUID, uuid4
 
 from graphscale.utils import param_check
 
-class KvetchMemShard:
+from graphscale.kvetch.kvetch import (
+    KvetchShard,
+)
+
+class KvetchMemShard(KvetchShard):
     def __init__(self, *, indexes):
         self._index_dict = dict(zip([index.index_name() for index in indexes], indexes))
         self._objects = {}

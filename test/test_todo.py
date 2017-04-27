@@ -39,13 +39,13 @@ def init_clear_kvetch_context(context):
     create_kvetch_objects_table(context.conn())
     create_kvetch_index_table(context.conn(), 'todo_items')
 
-magnus_conn = pymysql.connect(
-    host='localhost',
-    user='magnus',
-    password='magnus',
-    db='unittest_mysql_db',
-    charset='utf8mb4',
-    cursorclass=pymysql.cursors.DictCursor)
+# magnus_conn = pymysql.connect(
+#     host='localhost',
+#     user='magnus',
+#     password='magnus',
+#     db='unittest_mysql_db',
+#     charset='utf8mb4',
+#     cursorclass=pymysql.cursors.DictCursor)
 
 # @pytest.fixture
 # def test_context():
