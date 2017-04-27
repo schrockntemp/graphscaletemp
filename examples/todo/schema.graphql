@@ -1,0 +1,10 @@
+type TodoUser {
+    id: ID!
+    name: String
+    todos: [TodoItem]
+}
+
+type TodoItem {
+    id: ID!
+    user: TodoUser
+}
