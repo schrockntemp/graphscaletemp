@@ -40,12 +40,12 @@ def create_kvetch_index_table(shard, shard_index):
         shard_index.index_name())
     execute_sql(shard.conn(), sql)
 
-def init_shard_db_tables(shard):
+def init_shard_db_tables(shard, indexes):
     create_kvetch_objects_table(shard)
-    for shard_index in shard.indexes():
+    for shard_index in indexes.values():
         create_kvetch_index_table(shard, shard_index)
 
-def drop_shard_db_tables(shard):
+def drop_shard_db_tables(shard, indexes):
     execute_sql(shard.conn(), 'DROP TABLE IF EXISTS kvetch_objects')
-    for shard_index in shard.indexes():
+    for shard_index in indexes.values():
         execute_sql(shard.conn(), 'DROP TABLE IF EXISTS %s' % shard_index.index_name())

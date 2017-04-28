@@ -19,19 +19,19 @@ class MockReturns:
         return return_value
 
 def single_shard_kvetch():
-    shard = KvetchMemShard(indexes=[])
+    shard = KvetchMemShard()
     return Kvetch(shards=[shard], indexes=[])
 
 def two_shards_kvetch():
-    shards = [KvetchMemShard(indexes=[]) for i in range(0, 2)]
+    shards = [KvetchMemShard() for i in range(0, 2)]
     return Kvetch(shards=shards, indexes=[])
 
 def three_shards_kvetch():
-    shards = [KvetchMemShard(indexes=[]) for i in range(0, 3)]
+    shards = [KvetchMemShard() for i in range(0, 3)]
     return Kvetch(shards=shards, indexes=[])
 
 def many_shards_kvetch():
-    shards = [KvetchMemShard(indexes=[]) for i in range(0, 16)]
+    shards = [KvetchMemShard() for i in range(0, 16)]
     return Kvetch(shards=shards, indexes=[])
 
 @pytest.mark.asyncio

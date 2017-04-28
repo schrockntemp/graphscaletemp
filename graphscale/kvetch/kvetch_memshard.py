@@ -30,6 +30,11 @@ class KvetchMemIndex(KvetchShardIndex):
         return self._shard_on
 
 
+def safe_dict_get(d, key, default):
+    if key not in d:
+        d[key] = default
+    return d[key]
+
 def safe_append_to_dict_list(dict_list, key, value):
     if key not in dict_list:
         dict_list[key] = []
@@ -37,15 +42,9 @@ def safe_append_to_dict_list(dict_list, key, value):
 
 
 class KvetchMemShard(KvetchShard):
-    def __init__(self, *, indexes):
+    def __init__(self):
         self._objects = {}
-        self._indexes = {index.index_name(): {} for index in indexes}
-
-    def indexes(self):
-        return self._indexes.values()
-
-    def index_by_name(self, name):
-        return self._indexes[name]
+        self._indexes = {}
 
     async def gen_object(self, id_):
         param_check(id_, UUID, 'id_')
@@ -59,7 +58,7 @@ class KvetchMemShard(KvetchShard):
 
     async def gen_insert_index_entry(self, index, index_value, target_value):
         index_name = index.index_name()
-        index_dict = self._indexes[index_name]
+        index_dict = safe_dict_get(self._indexes, index_name, {})
         index_entry = {'target_value': target_value, 'updated': datetime.now()}
         safe_append_to_dict_list(index_dict, index_value, index_entry)
         return index_entry
@@ -75,26 +74,9 @@ class KvetchMemShard(KvetchShard):
             **{'id': new_id, '__type_id': type_id, 'updated': datetime.now()},
             **data
         }
-
-        # def safe_append_to_dict_list(dict_list, key, value):
-        #     if key not in dict_list:
-        #         dict_list[key] = []
-        #     dict_list[key].append(value)
-
-        # for index_name, index in self._index_dict.items():
-        #     attr = index.indexed_attr()
-        #     if attr in data and data[attr]:
-        #         index_dict = self._indexes[index_name]
-        #         index_value = data[attr]
-        #         # { index_name => { index_value => { target_value: , updated } } }
-        #         safe_append_to_dict_list(index_dict, index_value, {
-        #             'target_value' : new_id,
-        #             'updated' : datetime.now()
-        #         })
-
         return new_id
 
-    async def gen_all(self, index, value):
-        index_data = self._indexes[index.index_name()]
-        ids = [entry['target_value'] for entry in index_data[value]]
-        return await self.gen_objects(ids)
+    # async def gen_all(self, index, value):
+    #     index_data = self._indexes[index.index_name()]
+    #     ids = [entry['target_value'] for entry in index_data[value]]
+    #     return await self.gen_objects(ids)

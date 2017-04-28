@@ -108,10 +108,10 @@ def sync_kv_get_objects(shard, ids):
     param_check(shard, KvetchShard, 'shard')
     return execute_coro(shard.gen_objects(ids))
 
-def sync_kv_index_get_all(shard, index, value):
-    param_check(shard, KvetchShard, 'shard')
-    param_check(index, KvetchShardIndex, 'index')
-    return execute_coro(shard.gen_all(index, value))
+# def sync_kv_index_get_all(shard, index, value):
+#     param_check(shard, KvetchShard, 'shard')
+#     param_check(index, KvetchShardIndex, 'index')
+#     return execute_coro(shard.gen_all(index, value))
 
 def sync_kv_insert_index_entry(shard, index_name, index_value, target_value):
     return execute_coro(shard.gen_insert_index_entry(index_name, index_value, target_value))
@@ -143,9 +143,8 @@ class KvetchDbIndex(KvetchShardIndex):
         return self._indexed_sql_type
 
 class KvetchDbShard(KvetchShard):
-    def __init__(self, *, pool, indexes):
+    def __init__(self, *, pool):
         self._pool = pool
-        self._index_dict = dict(zip([index.index_name() for index in indexes], indexes))
 
     @staticmethod
     def fromconn(conn):
@@ -153,12 +152,6 @@ class KvetchDbShard(KvetchShard):
 
     def conn(self):
         return self._pool.conn()
-
-    def indexes(self):
-        return self._index_dict.values()
-
-    def index_by_name(self, name):
-        return self._index_dict[name]
 
     async def gen_object(self, id_):
         param_check(id_, UUID, 'id_')

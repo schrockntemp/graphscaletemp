@@ -39,7 +39,7 @@ def mem_single_index_shard():
     indexes = {
         'related_id_index': related_index,
     }
-    return (KvetchMemShard(indexes=[related_index]), indexes)
+    return (KvetchMemShard(), indexes)
 
 
 def db_single_index_shard():
@@ -50,15 +50,13 @@ def db_single_index_shard():
     )
     shard = KvetchDbShard(
         pool=KvetchDbSingleConnectionPool(MagnusConn.get_conn()),
-        indexes=[related_index],
     )
-    drop_shard_db_tables(shard)
-    init_shard_db_tables(shard)
     indexes = {
         'related_id_index': related_index,
     }
+    drop_shard_db_tables(shard, indexes)
+    init_shard_db_tables(shard, indexes)
     return (shard, indexes)
-    # drop_shard_db_tables(shard)
 
 @pytest.fixture
 def only_shard():
@@ -75,7 +73,6 @@ def test_shard_double_index():
     return mem_double_index_shard()
     # return db_double_index_shard()
 
-
 def mem_double_index_shard():
     related_index = KvetchMemIndex(
         indexed_attr='related_id',
@@ -86,7 +83,7 @@ def mem_double_index_shard():
         index_name='num_index'
     )
     indexes = {'related_id_index': related_index, 'num_index': num_index}
-    return (KvetchMemShard(indexes=[related_index, num_index]), indexes)
+    return (KvetchMemShard(), indexes)
 
 
 def db_double_index_shard():
@@ -102,11 +99,10 @@ def db_double_index_shard():
     )
     shard = KvetchDbShard(
         pool=KvetchDbSingleConnectionPool(MagnusConn.get_conn()),
-        indexes=[related_index, num_index]
     )
-    drop_shard_db_tables(shard)
-    init_shard_db_tables(shard)
     indexes = {'related_id_index': related_index, 'num_index': num_index}
+    drop_shard_db_tables(shard, indexes)
+    init_shard_db_tables(shard, indexes)
     return shard, indexes
 
 
