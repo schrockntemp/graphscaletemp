@@ -107,10 +107,6 @@ def test_shard_double_index():
     return mem_double_index_shard()
     # return db_double_index_shard()
 
-def test_data_to_body():
-    body = data_to_body({'name' : 'Joe'})
-    assert body is not None
-
 def test_object_insert(test_shard_single_index):
     data = {'num' : 2}
     new_id = uuid4()

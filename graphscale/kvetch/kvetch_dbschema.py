@@ -26,9 +26,11 @@ def create_kvetch_index_table_sql(index_column, index_sql_type, target_column, i
     %s BINARY(16) NOT NULL,
     updated TIMESTAMP NOT NULL,
     UNIQUE KEY (%s, %s),
+    UNIQUE KEY (%s, %s),
     KEY (updated)
 ) ENGINE=InnoDB;
-""" % (index_name, index_column, index_sql_type, target_column, index_column, target_column)
+""" % (index_name, index_column, index_sql_type, target_column,
+       index_column, target_column, target_column, index_column)
 
 def create_kvetch_objects_table(shard):
     execute_sql(shard.conn(), create_kvetch_objects_table_sql())

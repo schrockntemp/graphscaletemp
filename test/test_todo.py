@@ -52,12 +52,6 @@ def init_clear_kvetch_context(context):
 #     charset='utf8mb4',
 #     cursorclass=pymysql.cursors.DictCursor)
 
-# @pytest.fixture
-# def test_context():
-#     context = KvetchContext(magnus_conn)
-#     init_clear_kvetch_context(context)
-#     return context
-
 @pytest.fixture
 def test_context():
     indexes = []
@@ -117,27 +111,28 @@ async def test_gen_pents(test_mem_context):
     assert isinstance(pent_dict[new_user_id], TodoUser)
     assert isinstance(pent_dict[new_todo_id], TodoItem)
 
-# @pytest.mark.asyncio
-# async def test_gen_item(test_context):
-#     new_user = await create_todo_user(test_context, TodoUserInput(name='Test Name'))
-#     todo_input = TodoItemInput(user_id=new_user.id_(), text='some text')
-#     new_todo_item = await create_todo_item(test_context, todo_input)
-#     assert new_todo_item.text() == 'some text'
+@pytest.mark.asyncio
+async def test_gen_item(test_mem_context):
+    new_user = await create_todo_user(test_mem_context, TodoUserInput(name='Test Name'))
+    todo_input = TodoItemInput(user_id=new_user.id_(), text='some text')
+    new_todo_item = await create_todo_item(test_mem_context, todo_input)
+    assert new_todo_item.text() == 'some text'
+
+@pytest.mark.asyncio
+async def test_gen_item_then_user(test_mem_context):
+    new_user = await create_todo_user(test_mem_context, TodoUserInput(name='Test Name'))
+    todo_input = TodoItemInput(user_id=new_user.id_(), text='some text')
+    new_todo_item = await create_todo_item(test_mem_context, todo_input)
+    genned_user = await new_todo_item.gen_user()
+    assert genned_user.id_() == new_user.id_()
+
 
 # @pytest.mark.asyncio
-# async def test_gen_item_then_user(test_context):
-#     new_user = await create_todo_user(test_context, TodoUserInput(name='Test Name'))
-#     todo_input = TodoItemInput(user_id=new_user.id_(), text='some text')
-#     new_todo_item = await create_todo_item(test_context, todo_input)
-#     genned_user = await new_todo_item.gen_user()
-#     assert genned_user.id_() == new_user.id_()
-
-# @pytest.mark.asyncio
-# async def test_gen_item_list_one_member(test_context):
-#     new_user_id = (await create_todo_user(test_context, TodoUserInput(name='Test Name'))).id_()
+# async def test_gen_item_list_one_member(test_mem_context):
+#     new_user_id = (await create_todo_user(test_mem_context, TodoUserInput(name='Test Name'))).id_()
 #     todo_input = TodoItemInput(user_id=new_user_id, text='some text')
-#     new_todo_id = (await create_todo_item(test_context, todo_input)).id_()
-#     new_user = await TodoUser.gen(test_context, new_user_id)
+#     new_todo_id = (await create_todo_item(test_mem_context, todo_input)).id_()
+#     new_user = await TodoUser.gen(test_mem_context, new_user_id)
 #     new_todos = await new_user.gen_todo_items()
 #     assert len(new_todos) == 1
 #     assert new_todos[0].id_() == new_todo_id
