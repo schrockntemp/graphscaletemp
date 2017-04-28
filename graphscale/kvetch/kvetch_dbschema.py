@@ -12,9 +12,6 @@ def create_kvetch_objects_table_sql():
 ) ENGINE=InnoDB;
 """
 
-def default_index_name(from_attr):
-    return 'kvetch_index_%s_entity_id' % from_attr
-
 def create_kvetch_index_table_sql(index_column, index_sql_type, target_column, index_name):
     param_check(index_column, str, 'index_column')
     param_check(target_column, str, 'target_column')
@@ -25,8 +22,8 @@ def create_kvetch_index_table_sql(index_column, index_sql_type, target_column, i
     %s %s NOT NULL,
     %s BINARY(16) NOT NULL,
     updated TIMESTAMP NOT NULL,
-    UNIQUE KEY (%s, %s),
-    UNIQUE KEY (%s, %s),
+    KEY (%s, %s),
+    KEY (%s, %s),
     KEY (updated)
 ) ENGINE=InnoDB;
 """ % (index_name, index_column, index_sql_type, target_column,
@@ -39,7 +36,7 @@ def create_kvetch_index_table(shard, shard_index):
     sql = create_kvetch_index_table_sql(
         shard_index.indexed_attr(),
         shard_index.indexed_sql_type(),
-        'entity_id',
+        'target_value',
         shard_index.index_name())
     execute_sql(shard.conn(), sql)
 

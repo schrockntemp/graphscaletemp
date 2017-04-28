@@ -82,6 +82,9 @@ def _kv_shard_get_index_entries(shard_conn, index_name, index_column, index_valu
     with shard_conn.cursor() as cursor:
         cursor.execute(sql, (_to_sql_value(index_value)))
         rows = cursor.fetchall()
+    # for now assume target_value is UUID
+    for row in rows:
+        row['target_value'] = UUID(bytes=row['target_value'])
     return rows
 
 
@@ -110,7 +113,17 @@ def sync_kv_index_get_all(shard, index, value):
     param_check(index, KvetchShardIndex, 'index')
     return execute_coro(shard.gen_all(index, value))
 
-class KvetchDbShardIndex(KvetchShardIndex):
+def sync_kv_insert_index_entry(shard, index_name, index_value, target_value):
+    return execute_coro(shard.gen_insert_index_entry(index_name, index_value, target_value))
+
+def sync_kv_get_index_entries(shard, index, index_value):
+    return execute_coro(shard.gen_index_entries(index, index_value))
+
+def sync_kv_get_index_ids(shard, index, index_value):
+    entries = sync_kv_get_index_entries(shard, index, index_value)
+    return [entry['target_value'] for entry in entries]
+
+class KvetchDbIndex(KvetchShardIndex):
     def __init__(self, *, indexed_attr, indexed_sql_type, index_name):
         param_check(indexed_attr, str, 'indexed_attr')
         param_check(indexed_sql_type, str, 'indexed_sql_type')
@@ -157,32 +170,29 @@ class KvetchDbShard(KvetchShard):
             raise ValueError('ids must have at least 1 element')
         return _kv_shard_get_objects(self.conn(), ids)
 
+    async def gen_insert_index_entry(self, index, index_value, target_value):
+        attr = index.indexed_attr()
+        _kv_shard_insert_index_entry(
+            shard_conn=self.conn(),
+            index_name=index.index_name(),
+            index_column=attr,
+            index_value=index_value,
+            target_column='target_value',
+            target_value=target_value,
+        )
+
+
     async def gen_insert_object(self, new_id, type_id, data):
         self.check_insert_object_vars(new_id, type_id, data)
         _kv_shard_insert_object(self.conn(), new_id, type_id, data)
-
-        for index_name, index in self._index_dict.items():
-            attr = index.indexed_attr()
-            if attr in data and data[attr]:
-                _kv_shard_insert_index_entry(
-                    shard_conn=self.conn(),
-                    index_name=index_name,
-                    index_column=attr,
-                    index_value=data[attr],
-                    target_column='entity_id',
-                    target_value=new_id,
-                )
-
         return new_id
 
-    async def gen_all(self, index, value):
-        entries = _kv_shard_get_index_entries(
+    async def gen_index_entries(self, index, value):
+
+        return _kv_shard_get_index_entries(
             shard_conn=self.conn(),
             index_name=index.index_name(),
             index_column=index.indexed_attr(),
             index_value=value,
-            target_column='entity_id',
+            target_column='target_value',
         )
-        ids = [UUID(bytes=entry['entity_id']) for entry in entries]
-        objs = await self.gen_objects(ids)
-        return objs

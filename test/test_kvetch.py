@@ -5,7 +5,7 @@ import pytest
 from graphscale.kvetch import Kvetch
 from graphscale.kvetch.kvetch_memshard import (
     KvetchMemShard,
-    KvetchMemShardIndex
+    KvetchMemIndex
 )
 
 class MockReturns:
@@ -20,19 +20,19 @@ class MockReturns:
 
 def single_shard_kvetch():
     shard = KvetchMemShard(indexes=[])
-    return Kvetch(shards=[shard])
+    return Kvetch(shards=[shard], indexes=[])
 
 def two_shards_kvetch():
     shards = [KvetchMemShard(indexes=[]) for i in range(0, 2)]
-    return Kvetch(shards)
+    return Kvetch(shards=shards, indexes=[])
 
 def three_shards_kvetch():
     shards = [KvetchMemShard(indexes=[]) for i in range(0, 3)]
-    return Kvetch(shards=shards)
+    return Kvetch(shards=shards, indexes=[])
 
 def many_shards_kvetch():
     shards = [KvetchMemShard(indexes=[]) for i in range(0, 16)]
-    return Kvetch(shards=shards)
+    return Kvetch(shards=shards, indexes=[])
 
 @pytest.mark.asyncio
 async def test_insert_get_single_shard():

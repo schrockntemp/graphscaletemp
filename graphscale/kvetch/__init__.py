@@ -3,7 +3,7 @@
 from .kvetch_dbshard import (
     KvetchDbShard,
     KvetchDbSingleConnectionPool,
-    KvetchDbShardIndex,
+    KvetchDbIndex,
 )
 
 from .kvetch import (

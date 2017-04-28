@@ -21,7 +21,7 @@ from graphscale.kvetch import (
 
 from graphscale.kvetch.kvetch_memshard import (
     KvetchMemShard,
-    KvetchMemShardIndex,
+    KvetchMemIndex,
 )
 
 from graphscale.kvetch.kvetch_dbschema import (
@@ -55,26 +55,27 @@ def init_clear_kvetch_context(context):
 @pytest.fixture
 def test_context():
     indexes = []
+    KvetchMemIndex(indexed_attr='user_id', index_name='todo_item_user_index')
     shards = [KvetchDbShard(
-        pool=KvetchDbSingleConnectionPool(magnus_conn),
+        pool=KvetchDbSingleConnectionPool(MagnusConn.get_conn()),
         indexes=indexes,
     )]
     drop_shard_db_tables(shards[0])
     init_shard_db_tables(shards[0])
     return PentContext(
-        kvetch=Kvetch(shards),
+        kvetch=Kvetch(shards=shards, indexes=indexes),
         config=PentConfig(get_todo_type_id_class_map())
     )
 
 @pytest.fixture
 def test_mem_context():
-    todo_user_id_index = KvetchMemShardIndex(
+    indexes = [KvetchMemIndex(
         indexed_attr='user_id',
         index_name='todo_user_id_index'
-    )
-    shards = [KvetchMemShard(indexes=[todo_user_id_index])]
+    )]
+    shards = [KvetchMemShard(indexes=indexes)]
     return PentContext(
-        kvetch=Kvetch(shards),
+        kvetch=Kvetch(shards=shards,indexes=indexes),
         config=PentConfig(get_todo_type_id_class_map())
     )
 
