@@ -57,9 +57,8 @@ class KvetchMemShard(KvetchShard):
             raise ValueError('ids must have at least 1 element')
         return {id_: self._objects.get(id_) for id_ in ids}
 
-    async def gen_insert_object(self, type_id, data):
-        self.check_insert_object_vars(type_id, data)
-        new_id = uuid4()
+    async def gen_insert_object(self, new_id, type_id, data):
+        self.check_insert_object_vars(new_id, type_id, data)
         self._objects[new_id] = {
             **{'id' : new_id, '__type_id' : type_id, 'updated' : datetime.now()},
             **data

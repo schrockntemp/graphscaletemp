@@ -20,7 +20,7 @@ def execute_sql(conn, sql):
     return sql
 
 async def async_array(coros):
-    return await asyncio.gather(coros)
+    return await asyncio.gather(*coros)
 
 async def async_tuple(*coros):
-    return tuple(await asyncio.gather(coros))
+    return tuple(await asyncio.gather(*coros))

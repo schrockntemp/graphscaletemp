@@ -45,11 +45,11 @@ def kv_get_objects_sync(context, ids):
 
     return execute_coro(kv_gen_objects(context, ids))
 
-def kv_insert_object(context, type_id, data):
-    if context is None:
-        raise ValueError('dld')
-    shard = KvetchDbShard.fromconn(context.conn())
-    return execute_coro(shard.gen_insert_object(type_id, data))
+# def kv_insert_object(context, type_id, data):
+#     if context is None:
+#         raise ValueError('dld')
+#     shard = KvetchDbShard.fromconn(context.conn())
+#     return execute_coro(shard.gen_insert_object(type_id, data))
 
 def index_table_name(index_name):
     return 'kvetch_%s_edges' % index_name

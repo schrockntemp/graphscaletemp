@@ -19,6 +19,11 @@ from graphscale.kvetch import (
     KvetchDbSingleConnectionPool,
 )
 
+from graphscale.kvetch.kvetch_memshard import (
+    KvetchMemShard,
+    KvetchMemShardIndex,
+)
+
 from graphscale.kvetch.kvetch_dbschema import (
     init_shard_db_tables,
     drop_shard_db_tables,
@@ -67,40 +72,50 @@ def test_context():
         config=PentConfig(get_todo_type_id_class_map())
     )
 
-def test_todo(test_context):
+@pytest.fixture
+def test_mem_context():
+    todo_user_id_index = KvetchMemShardIndex(
+        indexed_attr='user_id',
+        index_name='todo_user_id_index'
+    )
+    shards = [KvetchMemShard(indexes=[todo_user_id_index])]
+    return PentContext(
+        kvetch=Kvetch(shards),
+        config=PentConfig(get_todo_type_id_class_map())
+    )
+
+def test_todo(test_mem_context):
     id_ = uuid4()
-    user = TodoUser(test_context, id_, {})
+    user = TodoUser(test_mem_context, id_, {})
     assert id_ == user.id_()
 
-# type 1000 User
-
 @pytest.mark.asyncio
-async def test_create_todo_user(test_context):
-    new_user = await create_todo_user(test_context, TodoUserInput(name='Test Name'))
+async def test_create_todo_user(test_mem_context):
+    new_user = await create_todo_user(test_mem_context, TodoUserInput(name='Test Name'))
     assert new_user.name() == 'Test Name'
 
 @pytest.mark.asyncio
-async def test_gen_user(test_context):
-    new_user = await create_todo_user(test_context, TodoUserInput(name='Test Name'))
-    genned_user = await TodoUser.gen(test_context, new_user.id_())
+async def test_gen_user(test_mem_context):
+    new_user = await create_todo_user(test_mem_context, TodoUserInput(name='Test Name'))
+    genned_user = await TodoUser.gen(test_mem_context, new_user.id_())
     assert genned_user.name() == 'Test Name'
 
-# @pytest.mark.asyncio
-# async def test_gen_pent(test_context):
-#     new_user = await create_todo_user(test_context, TodoUserInput(name='Test Name'))
-#     genned_pent = await Pent.gen(test_context, new_user.id_())
-#     assert isinstance(genned_pent, TodoUser)
-#     assert genned_pent.name() == 'Test Name'
+@pytest.mark.asyncio
+async def test_gen_pent(test_mem_context):
+    new_user = await create_todo_user(test_mem_context, TodoUserInput(name='Test Name'))
+    genned_pent = await Pent.gen(test_mem_context, new_user.id_())
+    assert isinstance(genned_pent, TodoUser)
+    assert genned_pent.name() == 'Test Name'
 
-# @pytest.mark.asyncio
-# async def test_gen_pents(test_context):
-#     new_user_id = (await create_todo_user(test_context, TodoUserInput(name='Test Name'))).id_()
-#     todo_input = TodoItemInput(user_id=new_user_id, text='some text')
-#     new_todo_id = (await create_todo_item(test_context, todo_input)).id_()
-#     pent_dict = await Pent.gen_list(test_context, [new_user_id, new_todo_id])
-#     assert len(pent_dict) == 2
-#     assert isinstance(pent_dict[new_user_id], TodoUser)
-#     assert isinstance(pent_dict[new_todo_id], TodoItem)
+@pytest.mark.asyncio
+async def test_gen_pents(test_mem_context):
+    new_user_id = (await create_todo_user(test_mem_context, TodoUserInput(name='Test Name'))).id_()
+    todo_input = TodoItemInput(user_id=new_user_id, text='some text')
+    new_todo_id = (await create_todo_item(test_mem_context, todo_input)).id_()
+    pent_dict = await Pent.gen_list(test_mem_context, [new_user_id, new_todo_id])
+    assert len(pent_dict) == 2
+    assert isinstance(pent_dict[new_user_id], TodoUser)
+    assert isinstance(pent_dict[new_todo_id], TodoItem)
 
 # @pytest.mark.asyncio
 # async def test_gen_item(test_context):

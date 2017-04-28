@@ -44,9 +44,8 @@ def _kv_shard_get_objects(shard_conn, ids):
     obj_list = [row_to_obj(row) for row in rows]
     return dict(zip(ids_out, obj_list))
 
-def _kv_shard_insert_object(shard_conn, type_id, data):
+def _kv_shard_insert_object(shard_conn, new_id, type_id, data):
     with shard_conn.cursor() as cursor:
-        new_id = uuid4()
         sql = 'INSERT INTO kvetch_objects(id, type_id, updated, body) VALUES (%s, %s,  %s, %s)'
         cursor.execute(sql, (new_id.bytes, type_id, datetime.now(), data_to_body(data)))
 
@@ -85,46 +84,6 @@ def _kv_shard_get_index_entries(shard_conn, index_name, index_column, index_valu
         rows = cursor.fetchall()
     return rows
 
-class Kvetch:
-    def __init__(self, shards):
-        self._shards = shards
-
-    def get_shard(self, id_):
-        shard_id = self._shard_id_of_id(id_)
-        return self._shards[shard_id]
-
-    def _shard_id_of_id(self, id_):
-        # do something less stupid like consistent hashing
-        # excellent description here http://michaelnielsen.org/blog/consistent-hashing/
-        return int(id_) % len(self._shards)
-
-    async def gen_insert_object(self, type_id, data):
-        new_id = uuid4()
-        return await self.get_shard(new_id).gen_insert_object(type_id, data)
-
-    async def gen_object(self, id_):
-        return await self.get_shard(id_).gen_object(id_)
-
-    # not tested yet
-    async def gen_objects(self, ids):
-        shard_to_ids = {} # shard_id => [id]
-        for id_ in ids:
-            shard_id = self._shard_id_of_id(id_)
-            if not shard_id in shard_to_ids:
-                shard_to_ids[shard_id] = []
-            shard_to_ids[shard_id].append(id_)
-
-        coros = []
-        for shard_id, ids_in_shard in shard_to_ids.items():
-            shard = self._shards[shard_id]
-            coros.append(shard.gen_objects(ids_in_shard))
-
-        results = {}
-        obj_dict_per_shard = await async_array(coros)
-        for obj_dict in obj_dict_per_shard:
-            for id_, obj in obj_dict.items():
-                results[id_] = obj
-        return results
 
 class KvetchDbSingleConnectionPool:
     def __init__(self, conn):
@@ -134,9 +93,9 @@ class KvetchDbSingleConnectionPool:
     def conn(self):
         return self._conn
 
-def sync_kv_insert_object(shard, type_id, data):
+def sync_kv_insert_object(shard, new_id, type_id, data):
     param_check(shard, KvetchShard, 'shard')
-    return execute_coro(shard.gen_insert_object(type_id, data))
+    return execute_coro(shard.gen_insert_object(new_id, type_id, data))
 
 def sync_kv_get_object(shard, id_):
     param_check(shard, KvetchShard, 'shard')
@@ -198,9 +157,9 @@ class KvetchDbShard(KvetchShard):
             raise ValueError('ids must have at least 1 element')
         return _kv_shard_get_objects(self.conn(), ids)
 
-    async def gen_insert_object(self, type_id, data):
-        self.check_insert_object_vars(type_id, data)
-        new_id = _kv_shard_insert_object(self.conn(), type_id, data)
+    async def gen_insert_object(self, new_id, type_id, data):
+        self.check_insert_object_vars(new_id, type_id, data)
+        _kv_shard_insert_object(self.conn(), new_id, type_id, data)
 
         for index_name, index in self._index_dict.items():
             attr = index.indexed_attr()

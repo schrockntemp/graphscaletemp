@@ -1,10 +1,10 @@
-from graphscale.kvetch.kvetch_db import (
-    kv_gen_object,
-    kv_gen_objects,
-    kv_gen_index_entries,
-    kv_insert_object,
-    kv_insert_index_entry,
-)
+# from graphscale.kvetch.kvetch_db import (
+#     kv_gen_object,
+#     kv_gen_objects,
+#     kv_gen_index_entries,
+#     kv_insert_object,
+#     kv_insert_index_entry,
+# )
 
 from graphscale.kvetch import (
     Kvetch,
@@ -55,12 +55,12 @@ class PentConfig:
 
 
 async def load_pent(context, id_):
-    data = await kv_gen_object(context, id_)
+    data = await context.kvetch().gen_object(id_)
     cls = context.config().get_type(data['__type_id'])
     return cls(context, id_, data)
 
 async def load_pents(context, ids):
-    obj_dict = await kv_gen_objects(context, ids)
+    obj_dict = await context.kvetch().gen_objects(ids)
     pent_dict = {}
     for id_, data in obj_dict.items():
         cls = context.config().get_type(data['__type_id'])
@@ -164,7 +164,6 @@ async def create_todo_item(context, input_object):
     type_id = context.config().get_type_id(TodoItem)
     data = input_object.data()
     new_id = await context.kvetch().gen_insert_object(type_id, data)
-    # kv_insert_index_entry(context, 'todo_items', input_object.data()['user_id'], new_id)
     return await TodoItem.gen(context, new_id)
 
 def get_todo_type_id_class_map():

@@ -1,11 +1,13 @@
 #
 
 from .kvetch_dbshard import (
-    Kvetch,
     KvetchDbShard,
     KvetchDbSingleConnectionPool,
     KvetchDbShardIndex,
+)
 
+from .kvetch import (
+    Kvetch
 )
 
 __all__ = [
