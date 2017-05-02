@@ -27,17 +27,32 @@ def drop_index_table(conn, index_name):
     conn.commit()
 
 class MagnusConn:
-    conn = None
+    conns = {}
 
     @staticmethod
-    def get_conn():
-        if MagnusConn.conn is not None:
-            return MagnusConn.conn
-        MagnusConn.conn = pymysql.connect(
+    def get_unittest_conn():
+        return MagnusConn.get_conn('unittest_mysql_db')
+        # if MagnusConn.conn is not None:
+        #     return MagnusConn.conn
+        # MagnusConn.conn = pymysql.connect(
+        #     host='localhost',
+        #     user='magnus',
+        #     password='magnus',
+        #     db='unittest_mysql_db',
+        #     charset='utf8mb4',
+        #     cursorclass=pymysql.cursors.DictCursor)
+        # return MagnusConn.conn
+
+    @staticmethod
+    def get_conn(db_name):
+        if db_name in MagnusConn.conns:
+            return MagnusConn.conns[db_name]
+        MagnusConn.conns[db_name] = pymysql.connect(
             host='localhost',
             user='magnus',
             password='magnus',
-            db='unittest_mysql_db',
+            db=db_name,
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor)
-        return MagnusConn.conn
+        return MagnusConn.conns[db_name]
+

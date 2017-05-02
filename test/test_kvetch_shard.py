@@ -51,7 +51,7 @@ def db_single_edge_shard():
         from_id_attr='related_id',
     )
     shard = KvetchDbShard(
-        pool=KvetchDbSingleConnectionPool(MagnusConn.get_conn()),
+        pool=KvetchDbSingleConnectionPool(MagnusConn.get_unittest_conn()),
     )
     indexes = {}
     edges = {
@@ -68,13 +68,13 @@ def only_shard():
 
 @pytest.fixture
 def test_shard_single_edge():
-    return mem_single_edge_shard()
-    # return db_single_edge_shard()
+    # return mem_single_edge_shard()
+    return db_single_edge_shard()
 
 @pytest.fixture
 def test_shard_single_index():
-    return mem_edge_and_index_shard()
-    # return db_edge_and_index_shard()
+    # return mem_edge_and_index_shard()
+    return db_edge_and_index_shard()
 
 def mem_edge_and_index_shard():
     related_edge = KvetchMemEdgeDefinition(
@@ -102,7 +102,7 @@ def db_edge_and_index_shard():
         index_name='num_index'
     )
     shard = KvetchDbShard(
-        pool=KvetchDbSingleConnectionPool(MagnusConn.get_conn()),
+        pool=KvetchDbSingleConnectionPool(MagnusConn.get_unittest_conn()),
     )
     edges = {'related_edge': related_edge}
     indexes = {'num_index': num_index}

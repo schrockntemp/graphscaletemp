@@ -1,14 +1,13 @@
 import pickle
 import zlib
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import UUID 
 
 from pymysql.connections import Connection
 
 from graphscale.utils import (
     execute_coro,
     param_check,
-    async_array
 )
 
 from graphscale.kvetch.kvetch import (

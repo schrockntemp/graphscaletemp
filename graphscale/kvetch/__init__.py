@@ -7,7 +7,8 @@ from .kvetch_dbshard import (
 )
 
 from .kvetch import (
-    Kvetch
+    Kvetch,
+    KvetchIndexDefinition,
 )
 
 __all__ = [

@@ -53,7 +53,7 @@ def db_context():
     indexes = []
     KvetchMemIndexDefinition(indexed_attr='user_id', index_name='todo_item_user_index')
     shards = [KvetchDbShard(
-        pool=KvetchDbSingleConnectionPool(MagnusConn.get_conn()),
+        pool=KvetchDbSingleConnectionPool(MagnusConn.get_unittest_conn()),
     )]
     drop_shard_db_tables(shards[0], {})
     init_shard_db_tables(shards[0], {})
