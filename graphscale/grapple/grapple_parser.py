@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from graphql.language.source import Source
 from graphql.language.parser import parse
@@ -18,11 +19,11 @@ def print_grapple(document_ast):
 
 def graphql_type_to_python_type(graphql_type):
     scalars = {
+        'ID' : UUID,
         'Int' : int,
         'Float' : float,
         'String' : str,
         'Boolean' : bool,
-        'ID' : str,
         'DateTime' : datetime,
     }
     if graphql_type in scalars:
@@ -133,14 +134,27 @@ def print_is_db_data_valid(writer, grapple_type):
     writer.line('def is_db_data_valid(data):')
     writer.increase_indent() # begin is_db_data_valid implementation
     print_if_return_false(writer, 'if not isinstance(data, dict):')
-    print_if_return_false(writer, "if req_data_elem_invalid(data, 'id', UUID): # id: ID!")
+    print_required_data_check(writer, 'id', 'UUID', 'ID')
     for field in grapple_type.fields():
-        if_line = "if opt_data_elem_invalid(data, '%s', %s):" % (field.name(), field.python_type())
-        if_line += ' # %s: %s' % (field.name(), field.graphql_type())
-        print_if_return_false(writer, if_line)
+        print_optional_data_check(writer, field.name(), field.python_type(), field.graphql_type())
     writer.line('return True')
     writer.decrease_indent() # end is_db_data_valid implementation
     writer.blank_line()
+
+def print_required_data_check(writer, name, python_type, graphql_type):
+    print_if_return_false(
+        writer,
+        "if req_data_elem_invalid(data, '%s', %s): # %s: %s!" %
+        (name, python_type, name, graphql_type)
+    )
+
+def print_optional_data_check(writer, name, python_type, graphql_type):
+    print_if_return_false(
+        writer,
+        "if opt_data_elem_invalid(data, '%s', %s): # %s: %s" %
+        (name, python_type, name, graphql_type)
+    )
+
 
 def print_generated_fields(writer, fields):
     for field in fields:
