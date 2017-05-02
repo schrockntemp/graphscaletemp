@@ -1,25 +1,24 @@
+#W0621 display redefine variable for test fixture
+#pylint: disable=W0621,C0103,W0401,W0614
 from uuid import uuid4
+
+import pytest
+
 from examples.todo.todo_pents import (
-    TodoUser,
-    TodoUserInput,
     TodoItem,
     TodoItemInput,
-    create_todo_user,
+    TodoUser,
+    TodoUserInput,
     create_todo_item,
-    PentContext,
-    get_todo_type_id_class_map,
-    PentConfig,
-    Pent,
+    create_todo_user,
+    get_todo_type_id_class_map
 )
-
-# import pymysql
 
 from graphscale.kvetch.kvetch import Kvetch
 from graphscale.kvetch.kvetch_dbshard import (
     KvetchDbShard,
     KvetchDbSingleConnectionPool,
     KvetchDbEdgeDefinition,
-    # KvetchDbIndexDefinition,
 )
 
 from graphscale.kvetch.kvetch_memshard import (
@@ -33,12 +32,11 @@ from graphscale.kvetch.kvetch_dbschema import (
     drop_shard_db_tables,
 )
 
-#W0621 display redefine variable for test fixture
-#pylint: disable=W0621,C0103,W0401,W0614
-
-# next task make this work with shard
-
-import pytest
+from graphscale.pent.pent import (
+    PentConfig,
+    PentContext,
+    Pent
+)
 
 from .test_utils import *
 
@@ -56,7 +54,7 @@ def test_cxt():
 def db_context():
     KvetchMemIndexDefinition(indexed_attr='user_id', index_name='todo_item_user_index')
     edges = KvetchDbEdgeDefinition(
-        edge_name='todo_to_user_edge',
+        edge_name='user_to_todo_edge',
         edge_id=9283,
         from_id_attr='user_id',
     )
@@ -73,7 +71,7 @@ def db_context():
 
 def mem_context():
     edges = [KvetchMemEdgeDefinition(
-        edge_name='todo_to_user_edge',
+        edge_name='user_to_todo_edge',
         edge_id=9283,
         from_id_attr='user_id',
     )]
@@ -150,21 +148,32 @@ async def test_gen_item_list_one_member(test_cxt):
     assert new_todos[0].id_() == new_todo_id
     assert new_todos[0].text() == 'some text'
 
-# @pytest.mark.asyncio
-# async def test_gen_item_list_three_members(test_context):
-#     new_user_id = (await create_todo_user(test_context, TodoUserInput(name='Test Name'))).id_()
-#     todo1_id = (await create_todo_item(
-#         test_context, TodoItemInput(user_id=new_user_id, text='text1'))).id_()
-#     todo2_id = (await create_todo_item(
-#         test_context, TodoItemInput(user_id=new_user_id, text='text2'))).id_()
-#     todo3_id = (await create_todo_item(
-#         test_context, TodoItemInput(user_id=new_user_id, text='text3'))).id_()
-#     new_user = await TodoUser.gen(test_context, new_user_id)
-#     new_todos = await new_user.gen_todo_items()
-#     assert len(new_todos) == 3
-#     assert new_todos[0].id_() == todo1_id
-#     assert new_todos[0].text() == 'text1'
-#     assert new_todos[1].id_() == todo2_id
-#     assert new_todos[1].text() == 'text2'
-#     assert new_todos[2].id_() == todo3_id
-#     assert new_todos[2].text() == 'text3'
+@pytest.mark.asyncio
+async def test_gen_item_list_three_members(test_cxt):
+    new_user_id = (await create_todo_user(test_cxt, TodoUserInput(name='Test Name'))).id_()
+    todo1_id = (await create_todo_item(
+        test_cxt, TodoItemInput(user_id=new_user_id, text='text1'))).id_()
+    todo2_id = (await create_todo_item(
+        test_cxt, TodoItemInput(user_id=new_user_id, text='text2'))).id_()
+    todo3_id = (await create_todo_item(
+        test_cxt, TodoItemInput(user_id=new_user_id, text='text3'))).id_()
+    new_user = await TodoUser.gen(test_cxt, new_user_id)
+    new_todos = await new_user.gen_todo_items()
+    assert len(new_todos) == 3
+    assert new_todos[0].id_() == todo1_id
+    assert new_todos[0].text() == 'text1'
+    assert new_todos[1].id_() == todo2_id
+    assert new_todos[1].text() == 'text2'
+    assert new_todos[2].id_() == todo3_id
+    assert new_todos[2].text() == 'text3'
+
+def test_data_valid_check():
+    assert TodoUser.is_db_data_valid({'id': uuid4(), 'name': 'something'})
+    assert not TodoUser.is_db_data_valid(None)
+    assert not TodoUser.is_db_data_valid('str')
+    assert not TodoUser.is_db_data_valid({'id': None, 'name': 'something'})
+    assert not TodoUser.is_db_data_valid({'id': 2343, 'name': 'something'})
+    assert not TodoUser.is_db_data_valid({'name': 'something'})
+    assert not TodoUser.is_db_data_valid({'id': 2343})
+    assert not TodoUser.is_db_data_valid({'id': 2343, 'name': None})
+    assert not TodoUser.is_db_data_valid({'id': 2343, 'name': 39483948})

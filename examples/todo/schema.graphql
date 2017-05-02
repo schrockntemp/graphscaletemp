@@ -1,10 +1,20 @@
 type TodoUser {
     id: ID!
-    name: String
+    name: String!
     todos: [TodoItem]
 }
 
 type TodoItem {
     id: ID!
     user: TodoUser
+    text: String!
+}
+
+type TodoUserInput {
+    name: String!
+}
+
+type TodoItemInput {
+    user_id: ID!
+    text: String!
 }

@@ -1,86 +1,105 @@
-# from graphscale.kvetch.kvetch_db import (
-#     kv_gen_object,
-#     kv_gen_objects
-# )
+from uuid import UUID
 
-# class PentConfig:
-
-#     _id_to_cls = None
-#     _cls_to_id = None
-
-#     @staticmethod
-#     def _get_id_to_cls_map():
-#         if PentConfig._id_to_cls is not None:
-#             return PentConfig._id_to_cls
-
-#         PentConfig._id_to_cls = {
-#             1000: TodoUser,
-#             1001: TodoItem,
-#         }
-#         return PentConfig._id_to_cls
-
-#     @staticmethod
-#     def _get_cls_to_id_map():
-#         if PentConfig._cls_to_id is not None:
-#             return PentConfig._cls_to_id
-
-#         # swap keys and values
-#         PentConfig._cls_to_id = {v:k for k, v in PentConfig._get_id_to_cls_map().items()}
-#         return PentConfig._cls_to_id
-
-#     @staticmethod
-#     def get_type(type_id):
-#         return PentConfig._get_id_to_cls_map()[type_id]
-
-#     @staticmethod
-#     def get_type_id(klass):
-#         return PentConfig._get_cls_to_id_map()[klass]
+from graphscale.kvetch.kvetch import Kvetch
+from graphscale.utils import param_check
 
 
-# async def _load_pent(context, id_):
-#     data = await kv_gen_object(context, id_)
-#     cls = PentConfig.get_type(data['__type_id'])
-#     return cls(context, id_, data)
+def reverse_dict(dict_to_reverse):
+    return {v: k for k, v in dict_to_reverse.items()}
 
-# async def _load_pents(context, ids):
-#     obj_dict = await kv_gen_objects(context, ids)
-#     pent_dict = {}
-#     for id_, data in obj_dict.items():
-#         cls = PentConfig.get_type(data['__type_id'])
-#         pent_dict[id_] = cls(context, id_, data)
-#     return pent_dict
+def safe_create(context, id_, klass, data):
+    if not klass.is_db_data_valid(data):
+        return None
+    return klass(context, id_, data)
 
-# class Pent:
-#     def __init__(self, context, id_, data):
-#         self._context = context
-#         self._id = id_
-#         self._data = data
+class PentConfig:
+    def __init__(self, id_to_klass_dict):
+        self._id_to_klass = id_to_klass_dict
+        self._klass_to_id = reverse_dict(id_to_klass_dict)
 
-#     @staticmethod
-#     async def genany(context, id_):
-#         return await _load_pent(context, id_)
+    def get_type(self, type_id):
+        return self._id_to_klass[type_id]
 
-#     @classmethod
-#     async def gen(cls, context, id_):
-#         if cls == Pent:
-#             return await Pent.genany(context, id_)
+    def get_type_id(self, klass):
+        return self._klass_to_id[klass]
 
-#         data = await kv_gen_object(context, id_)
-#         return cls(context, id_, data)
+async def load_pent(context, id_):
+    data = await context.kvetch().gen_object(id_)
+    klass = context.config().get_type(data['__type_id'])
+    return safe_create(context, id_, klass, data)
 
-#     @classmethod
-#     async def gen_list(cls, context, ids):
-#         if cls == Pent:
-#             return await _load_pents(context, ids)
-#         data_list = await kv_gen_objects(context, ids)
-#         return [cls(context, data['id'], data) for data in data_list.values()]
+async def load_pents(context, ids):
+    obj_dict = await context.kvetch().gen_objects(ids)
+    pent_dict = {}
+    for id_, data in obj_dict.items():
+        klass = context.config().get_type(data['__type_id'])
+        pent_dict[id_] = safe_create(context, id_, klass, data)
+    return pent_dict
+
+class Pent:
+    def __init__(self, context, id_, data):
+        param_check(context, PentContext, 'context')
+        param_check(id_, UUID, 'id_')
+        param_check(data, dict, 'dict')
+
+        self._context = context
+        self._id = id_
+        self._data = data
+
+    def kvetch(self):
+        return self._context.kvetch()
+
+    @classmethod
+    async def gen(cls, context, id_):
+        if cls == Pent:
+            return await load_pent(context, id_)
+
+        data = await context.kvetch().gen_object(id_)
+        return safe_create(context, id_, cls, data)
+
+    @classmethod
+    async def gen_list(cls, context, ids):
+        if cls == Pent:
+            return await load_pents(context, ids)
+        data_list = await context.kvetch().gen_objects(ids)
+        return [safe_create(context, data['id'], cls, data) for data in data_list.values()]
 
 
-#     def id_(self):
-#         return self._id
+    def id_(self):
+        return self._id
 
-#     def context(self):
-#         return self._context
+    def context(self):
+        return self._context
 
-#     def data(self):
-#         return self._data
+    def data(self):
+        return self._data
+
+    async def gen_edges_to(self, edge_name, after=None, first=None):
+        if after is not None or first is not None:
+            raise Exception('after, from not supported after: %s first: %s' % (after, first))
+
+        kvetch = self.kvetch()
+
+        edge_definition = kvetch.get_edge_definition_by_name(edge_name)
+        edges = await kvetch.gen_edges(edge_definition, self.id_())
+        return edges
+
+    async def gen_associated_pents(self, klass, edge_name, after=None, first=None):
+        if after is not None or first is not None:
+            raise Exception('after, from not supported after: %s first: %s' % (after, first))
+        edges = await self.gen_edges_to(edge_name)
+        to_ids = [edge['to_id'] for edge in edges]
+        return await klass.gen_list(self._context, to_ids)
+
+class PentContext:
+    def __init__(self, *, kvetch, config):
+        param_check(kvetch, Kvetch, 'kvetch')
+        param_check(config, PentConfig, 'config')
+        self._kvetch = kvetch
+        self._config = config
+
+    def kvetch(self):
+        return self._kvetch
+
+    def config(self):
+        return self._config
