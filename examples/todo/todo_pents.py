@@ -6,7 +6,7 @@
 #     kv_insert_index_entry,
 # )
 
-from graphscale.kvetch import (
+from graphscale.kvetch.kvetch import (
     Kvetch,
 )
 
@@ -18,34 +18,15 @@ from uuid import(
     UUID,
 )
 
+def reverse_dict(dict_to_reverse):
+    return {v: k for k, v in dict_to_reverse.items()}
+
+
 # TODDO make this a context and have it contain a kvetch context
 class PentConfig:
     def __init__(self, id_to_cls_dict):
         self._id_to_cls = id_to_cls_dict
-        self._cls_to_id = self.reverse_dict(id_to_cls_dict)
-
-    # _id_to_cls = None
-    # _cls_to_id = None
-
-    def reverse_dict(self, dict_to_reverse):
-        return {v:k for k, v in dict_to_reverse.items()}
-
-    # @staticmethod
-    # def _get_id_to_cls_map():
-    #     if PentConfig._id_to_cls is not None:
-    #         return PentConfig._id_to_cls
-
-    #     PentConfig._id_to_cls = get_todo_type_id_class_map()
-    #     return PentConfig._id_to_cls
-
-    # @staticmethod
-    # def _get_cls_to_id_map():
-    #     if PentConfig._cls_to_id is not None:
-    #         return PentConfig._cls_to_id
-
-    #     # swap keys and values
-    #     PentConfig._cls_to_id = {v:k for k, v in PentConfig._get_id_to_cls_map().items()}
-    #     return PentConfig._cls_to_id
+        self._cls_to_id = reverse_dict(id_to_cls_dict)
 
     def get_type(self, type_id):
         return self._id_to_cls[type_id]
@@ -72,12 +53,13 @@ class Pent:
         param_check(context, PentContext, 'context')
         param_check(id_, UUID, 'id_')
         param_check(data, dict, 'dict')
+
         self._context = context
         self._id = id_
         self._data = data
 
     def kvetch(self):
-        self._context().kvetch()
+        return self._context.kvetch()
 
     @classmethod
     async def gen(cls, context, id_):
@@ -91,7 +73,7 @@ class Pent:
     async def gen_list(cls, context, ids):
         if cls == Pent:
             return await load_pents(context, ids)
-        data_list = await kv_gen_objects(context, ids)
+        data_list = await context.kvetch().gen_objects(ids)
         return [cls(context, data['id'], data) for data in data_list.values()]
 
 
@@ -104,14 +86,29 @@ class Pent:
     def data(self):
         return self._data
 
-async def gen_pent_index_list(pent, index_name, klass, after, first):
-    entries = await kv_gen_index_entries(pent.context(), index_name, pent.id_())
-    ids = [entry['id_to'] for entry in entries]
-    return await klass.gen_list(pent.context(), ids)
+    async def gen_edges_to(self, edge_name, after=None, first=None):
+        if after is not None or first is not None:
+            raise Exception('after, from not supported after: %s first: %s' % (after, first))
 
+        kvetch = self.kvetch()
+
+        edge_definition = kvetch.get_edge_definition_by_name(edge_name)
+        edges = await kvetch.gen_edges(edge_definition, self.id_())
+        return edges
+
+
+# async def gen_pent_index_list(pent, index_name, klass, after, first):
+#     entries = await kv_gen_index_entries(pent.context(), index_name, pent.id_())
+#     ids = [entry['id_to'] for entry in entries]
+#     return await klass.gen_list(pent.context(), ids)
+
+# async def gen_pent_edge_ids(kvetch, edge_name, klass, after, first):
+#     edges = kvetch.gen_edges(kvetch.get_edge)
 
 class PentContext:
-    def __init__(self, kvetch, config):
+    def __init__(self, *, kvetch, config):
+        param_check(kvetch, Kvetch, 'kvetch')
+        param_check(config, PentConfig, 'config')
         self._kvetch = kvetch
         self._config = config
 
@@ -125,8 +122,10 @@ class TodoUser(Pent):
     def name(self):
         return self._data['name']
 
-    async def gen_todo_items(self, after=None, first=None):
-        return await gen_pent_index_list(self, 'todo_items', TodoItem, after, first)
+    async def gen_todo_items(self, _after=None, _first=None):
+        edges = await self.gen_edges_to('todo_to_user_edge')
+        to_ids = [edge['to_id'] for edge in edges]
+        return await TodoItem.gen_list(self._context, to_ids)
 
 class TodoUserInput:
     def __init__(self, *, name):

@@ -68,13 +68,13 @@ def only_shard():
 
 @pytest.fixture
 def test_shard_single_edge():
-    # return mem_single_edge_shard()
-    return db_single_edge_shard()
+    return mem_single_edge_shard()
+    # return db_single_edge_shard()
 
 @pytest.fixture
 def test_shard_single_index():
-    # return mem_edge_and_index_shard()
-    return db_edge_and_index_shard()
+    return mem_edge_and_index_shard()
+    # return db_edge_and_index_shard()
 
 def mem_edge_and_index_shard():
     related_edge = KvetchMemEdgeDefinition(

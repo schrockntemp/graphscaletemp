@@ -125,7 +125,7 @@ class Kvetch:
                 results[id_] = obj
         return results
 
-    async def gen_edges(self, edge_definition, from_id):
+    async def gen_edges(self, edge_definition, from_id, after=None, first=None):
         shard = self.get_shard_from_obj_id(from_id)
         return await shard.gen_edges(edge_definition, from_id)
 
