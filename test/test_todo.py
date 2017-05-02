@@ -11,7 +11,7 @@ from examples.todo.todo_pents import (
     TodoUserInput,
     create_todo_item,
     create_todo_user,
-    get_todo_type_id_class_map
+    get_todo_config
 )
 
 from graphscale.kvetch.kvetch import Kvetch
@@ -65,7 +65,7 @@ def db_context():
     init_shard_db_tables(shards[0], {})
     return PentContext(
         kvetch=Kvetch(shards=shards, edges=edges, indexes=[]),
-        config=PentConfig(get_todo_type_id_class_map())
+        config=get_todo_config()
     )
 
 
@@ -78,7 +78,7 @@ def mem_context():
     shards = [KvetchMemShard()]
     return PentContext(
         kvetch=Kvetch(shards=shards, edges=edges, indexes=[]),
-        config=PentConfig(get_todo_type_id_class_map())
+        config=get_todo_config()
     )
 
 

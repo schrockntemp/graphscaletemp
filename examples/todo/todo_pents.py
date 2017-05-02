@@ -1,28 +1,15 @@
 from uuid import UUID
 
-from graphscale.pent.pent import Pent
+from graphscale.pent.pent import Pent, PentConfig, create_pent
 from graphscale.utils import param_check
+
+from .generated.todo_pents_generated import TodoUserGenerated, TodoItemGenerated
 
 def data_elem_valid(data, key, klass):
     return (key in data) and data[key] and isinstance(data[key], klass)
 
-class TodoUser(Pent):
-    @staticmethod
-    # This method checks to see that data coming out of the database is valid
-    def is_db_data_valid(data):
-        if not isinstance(data, dict):
-            return False
-        if not data_elem_valid(data, 'id', UUID): # id: ID!
-            return False
-        if not data_elem_valid(data, 'name', str): # name: String!
-            return False
-        return True
-
-    def name(self):
-        return self._data['name']
-
-    async def gen_todo_items(self, _after=None, _first=None):
-        return await self.gen_associated_pents(TodoItem, 'user_to_todo_edge')
+class TodoUser(TodoUserGenerated):
+    pass
 
 class TodoUserInput:
     def __init__(self, *, name):
@@ -33,23 +20,8 @@ class TodoUserInput:
     def data(self):
         return self._data
 
-class TodoItem(Pent):
-    @staticmethod
-    # This method checks to see that data coming out of the database is valid
-    def is_db_data_valid(data):
-        if not isinstance(data, dict):
-            return False
-        if not data_elem_valid(data, 'id', UUID): # id: ID!
-            return False
-        if not data_elem_valid(data, 'text', str): # text: String!
-            return False
-        return True
-
-    def text(self):
-        return self._data['text']
-
-    async def gen_user(self):
-        return await TodoUser.gen(self._context, self._data['user_id'])
+class TodoItem(TodoItemGenerated):
+    pass
 
 class TodoItemInput:
     def __init__(self, *, user_id, text):
@@ -61,12 +33,6 @@ class TodoItemInput:
     def data(self):
         return self._data
 
-async def create_pent(context, klass, input_object):
-    type_id = context.config().get_type_id(klass)
-    data = input_object.data()
-    new_id = await context.kvetch().gen_insert_object(type_id, data)
-    return await klass.gen(context, new_id)
-
 async def create_todo_user(context, input_object):
     param_check(input_object, TodoUserInput, 'input_object')
     return await create_pent(context, TodoUser, input_object)
@@ -75,8 +41,16 @@ async def create_todo_item(context, input_object):
     param_check(input_object, TodoItemInput, 'input_object')
     return await create_pent(context, TodoItem, input_object)
 
-def get_todo_type_id_class_map():
+def get_object_config():
     return {
         1000 : TodoUser,
         1001 : TodoItem,
     }
+
+def get_edge_config():
+    return {
+        9283 : {'edge_name': 'user_to_todo_edge', 'target_type': TodoItem}
+    }
+
+def get_todo_config():
+    return PentConfig(object_config=get_object_config(), edge_config=get_edge_config())

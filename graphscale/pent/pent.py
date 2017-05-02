@@ -13,15 +13,20 @@ def safe_create(context, id_, klass, data):
     return klass(context, id_, data)
 
 class PentConfig:
-    def __init__(self, id_to_klass_dict):
-        self._id_to_klass = id_to_klass_dict
-        self._klass_to_id = reverse_dict(id_to_klass_dict)
+    def __init__(self, *, object_config, edge_config):
+        self._object_config = object_config
+        self._klass_to_id = reverse_dict(object_config)
+        self._edge_config = edge_config
+        self._name_to_edge = {edge['edge_name']: edge for edge_id, edge in edge_config.items()}
 
     def get_type(self, type_id):
-        return self._id_to_klass[type_id]
+        return self._object_config[type_id]
 
     def get_type_id(self, klass):
         return self._klass_to_id[klass]
+
+    def get_edge_target_type_from_name(self, edge_name):
+        return self._name_to_edge[edge_name]['target_type']
 
 async def load_pent(context, id_):
     data = await context.kvetch().gen_object(id_)
@@ -36,6 +41,12 @@ async def load_pents(context, ids):
         pent_dict[id_] = safe_create(context, id_, klass, data)
     return pent_dict
 
+async def create_pent(context, klass, input_object):
+    type_id = context.config().get_type_id(klass)
+    data = input_object.data()
+    new_id = await context.kvetch().gen_insert_object(type_id, data)
+    return await klass.gen(context, new_id)
+
 class Pent:
     def __init__(self, context, id_, data):
         param_check(context, PentContext, 'context')
@@ -48,6 +59,9 @@ class Pent:
 
     def kvetch(self):
         return self._context.kvetch()
+
+    def config(self):
+        return self._context.config() 
 
     @classmethod
     async def gen(cls, context, id_):
@@ -90,6 +104,7 @@ class Pent:
         edges = await self.gen_edges_to(edge_name)
         to_ids = [edge['to_id'] for edge in edges]
         return await klass.gen_list(self._context, to_ids)
+
 
 class PentContext:
     def __init__(self, *, kvetch, config):
