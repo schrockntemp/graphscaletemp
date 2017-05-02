@@ -8,17 +8,13 @@ from graphscale.kvetch.kvetch import (
     KvetchShardIndex,
 )
 
-
 class KvetchMemIndex(KvetchShardIndex):
-    def __init__(self, *, indexed_attr, index_name, shard_on=None):
+    def __init__(self, *, indexed_attr, index_name):
         param_check(indexed_attr, str, 'indexed_attr')
         param_check(index_name, str, 'index_name')
 
         self._indexed_attr = indexed_attr
         self._index_name = index_name
-        if shard_on is None:
-            shard_on = indexed_attr
-        self._shard_on = shard_on
 
     def index_name(self):
         return self._index_name
@@ -26,25 +22,23 @@ class KvetchMemIndex(KvetchShardIndex):
     def indexed_attr(self):
         return self._indexed_attr
 
-    def shard_on(self):
-        return self._shard_on
+class KvetchMemEdgeDefinition:
+    def __init__(self, *, name):
+        self._name = name
 
+    def name(self):
+        return self._name
 
-def safe_dict_get(d, key, default):
-    if key not in d:
-        d[key] = default
-    return d[key]
-
-def safe_append_to_dict_list(dict_list, key, value):
-    if key not in dict_list:
-        dict_list[key] = []
-    dict_list[key].append(value)
-
+def safe_append_to_dict_of_list(dict_of_list, key, value):
+    if key not in dict_of_list:
+        dict_of_list[key] = []
+    dict_of_list[key].append(value)
 
 class KvetchMemShard(KvetchShard):
     def __init__(self):
         self._objects = {}
-        self._indexes = {}
+        self._all_indexes = {}
+        self._all_edges = {}
 
     async def gen_object(self, id_):
         param_check(id_, UUID, 'id_')
@@ -56,15 +50,18 @@ class KvetchMemShard(KvetchShard):
             raise ValueError('ids must have at least 1 element')
         return {id_: self._objects.get(id_) for id_ in ids}
 
-    async def gen_insert_index_entry(self, index, index_value, target_value):
+    async def gen_insert_index_entry(self, index, index_value, target_id):
         index_name = index.index_name()
-        index_dict = safe_dict_get(self._indexes, index_name, {})
-        index_entry = {'target_value': target_value, 'updated': datetime.now()}
-        safe_append_to_dict_list(index_dict, index_value, index_entry)
+        if index_name not in self._all_indexes:
+            self._all_indexes[index_name] = {}
+
+        index_dict = self._all_indexes[index_name]
+        index_entry = {'target_id': target_id, 'updated': datetime.now()}
+        safe_append_to_dict_of_list(index_dict, index_value, index_entry)
         return index_entry
 
     async def gen_index_entries(self, index, index_value):
-        index_dict = self._indexes[index.index_name()]
+        index_dict = self._all_indexes[index.index_name()]
         return index_dict[index_value]
 
     async def gen_insert_object(self, new_id, type_id, data):
@@ -76,7 +73,23 @@ class KvetchMemShard(KvetchShard):
         }
         return new_id
 
-    # async def gen_all(self, index, value):
-    #     index_data = self._indexes[index.index_name()]
-    #     ids = [entry['target_value'] for entry in index_data[value]]
-    #     return await self.gen_objects(ids)
+    async def gen_insert_edge(self, edge_definition, from_id, to_id, data=None):
+        param_check(from_id, UUID, 'from_id')
+        param_check(to_id, UUID, 'to_id')
+        if data is None:
+            data = {}
+        param_check(data, dict, 'data')
+
+        edge_name = edge_definition.name()
+        if edge_name not in self._all_edges:
+            self._all_edges[edge_name] = {}
+
+        edge_entry = {'from_id': from_id, 'to_id': to_id, 'data': data}
+        safe_append_to_dict_of_list(self._all_edges[edge_name], from_id, edge_entry)
+
+    async def gen_edges(self, edge_definition, from_id):
+        return self._all_edges[edge_definition.name()][from_id]
+
+    async def gen_edge_ids(self, edge_definition, from_id):
+        edges = self._all_edges[edge_definition.name()][from_id]
+        return [edge['to_id'] for edge in edges]

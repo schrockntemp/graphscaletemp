@@ -66,25 +66,57 @@ def _kv_shard_insert_index_entry(
         index_column,
         index_value,
         target_column,
-        target_value):
+        target_id):
 
     sql = 'INSERT INTO %s (%s, %s, updated)' % (index_name, index_column, target_column)
     sql += ' VALUES(%s, %s, %s)'
-    values = [index_value, target_value, datetime.now()]
+    values = [index_value, target_id, datetime.now()]
     with shard_conn.cursor() as cursor:
         cursor.execute(sql, tuple(_to_sql_value(v) for v in values))
     shard_conn.commit()
+
+def _kv_shard_insert_edge(
+        shard_conn,
+        edge_id,
+        from_id,
+        to_id,
+        data):
+    sql = 'INSERT into kvetch_edges (edge_id, from_id, to_id, body) VALUES(%s, %s, %s, %s)'
+    values = (edge_id, from_id.bytes, to_id.bytes, data_to_body(data))
+    with shard_conn.cursor() as cursor:
+        cursor.execute(sql, values)
+    shard_conn.commit()
+
+def _kv_shard_get_edges(
+        shard_conn,
+        edge_id,
+        from_id):
+    sql = 'SELECT from_id, to_id, body FROM kvetch_edges WHERE from_id = %s'
+    rows = []
+    with shard_conn.cursor() as cursor:
+        cursor.execute(sql, from_id.bytes)
+        rows = cursor.fetchall()
+
+    edges = []
+    for row in rows:
+        edges.append({
+            'from_id': UUID(bytes=row['from_id']),
+            'to_id': UUID(bytes=row['to_id']),
+            'data': body_to_data(row['body']),
+        }) 
+    return edges
 
 def _kv_shard_get_index_entries(shard_conn, index_name, index_column, index_value, target_column):
     sql = 'SELECT %s FROM %s WHERE %s =' % (target_column, index_name, index_column)
     sql += '%s'
     sql += ' ORDER BY %s' % target_column
+    rows = []
     with shard_conn.cursor() as cursor:
         cursor.execute(sql, (_to_sql_value(index_value)))
         rows = cursor.fetchall()
-    # for now assume target_value is UUID
+
     for row in rows:
-        row['target_value'] = UUID(bytes=row['target_value'])
+        row['target_id'] = UUID(bytes=row['target_id'])
     return rows
 
 
@@ -113,15 +145,34 @@ def sync_kv_get_objects(shard, ids):
 #     param_check(index, KvetchShardIndex, 'index')
 #     return execute_coro(shard.gen_all(index, value))
 
-def sync_kv_insert_index_entry(shard, index_name, index_value, target_value):
-    return execute_coro(shard.gen_insert_index_entry(index_name, index_value, target_value))
+def sync_kv_insert_index_entry(shard, index_name, index_value, target_id):
+    return execute_coro(shard.gen_insert_index_entry(index_name, index_value, target_id))
+
+def sync_kv_insert_edge(shard, edge_def, from_id, to_id, data=None):
+    return execute_coro(shard.gen_insert_edge(edge_def, from_id, to_id, data))
 
 def sync_kv_get_index_entries(shard, index, index_value):
     return execute_coro(shard.gen_index_entries(index, index_value))
 
 def sync_kv_get_index_ids(shard, index, index_value):
     entries = sync_kv_get_index_entries(shard, index, index_value)
-    return [entry['target_value'] for entry in entries]
+    return [entry['target_id'] for entry in entries]
+
+def sync_kv_get_edge_ids(shard, edge_def, from_id):
+    return execute_coro(shard.gen_edge_ids(edge_def, from_id))
+
+class KvetchDbEdgeDefinition:
+    def __init__(self, *, name, edge_id):
+        param_check(name, str, 'name')
+        param_check(edge_id, int, 'edge_id')
+        self._name = name
+        self._edge_id = edge_id
+
+    def name(self):
+        return self._name
+
+    def edge_id(self):
+        return self._edge_id
 
 class KvetchDbIndex(KvetchShardIndex):
     def __init__(self, *, indexed_attr, indexed_sql_type, index_name):
@@ -163,29 +214,43 @@ class KvetchDbShard(KvetchShard):
             raise ValueError('ids must have at least 1 element')
         return _kv_shard_get_objects(self.conn(), ids)
 
-    async def gen_insert_index_entry(self, index, index_value, target_value):
+    async def gen_insert_index_entry(self, index, index_value, target_id):
         attr = index.indexed_attr()
         _kv_shard_insert_index_entry(
             shard_conn=self.conn(),
             index_name=index.index_name(),
             index_column=attr,
             index_value=index_value,
-            target_column='target_value',
-            target_value=target_value,
+            target_column='target_id',
+            target_id=target_id,
         )
 
+    async def gen_insert_edge(self, edge_definition, from_id, to_id, data=None):
+        param_check(from_id, UUID, 'from_id')
+        param_check(to_id, UUID, 'to_id')
+        if data is None:
+            data = {}
+        param_check(data, dict, 'data')
+        _kv_shard_insert_edge(self.conn(), edge_definition.edge_id(), from_id, to_id, data)
 
     async def gen_insert_object(self, new_id, type_id, data):
         self.check_insert_object_vars(new_id, type_id, data)
         _kv_shard_insert_object(self.conn(), new_id, type_id, data)
         return new_id
 
+    async def gen_edges(self, edge_definition, from_id):
+        param_check(from_id, UUID, 'from_id') 
+        return _kv_shard_get_edges(self.conn(), edge_definition.edge_id(), from_id)
+        
+    async def gen_edge_ids(self, edge_definition, from_id):
+        edges = await self.gen_edges(edge_definition, from_id)
+        return [edge['to_id'] for edge in edges]
+        
     async def gen_index_entries(self, index, value):
-
         return _kv_shard_get_index_entries(
             shard_conn=self.conn(),
             index_name=index.index_name(),
             index_column=index.indexed_attr(),
             index_value=value,
-            target_column='target_value',
+            target_column='target_id',
         )

@@ -11,17 +11,21 @@ import pytest
 from graphscale.kvetch.kvetch_dbshard import (
     KvetchDbShard,
     KvetchDbIndex,
+    KvetchDbEdgeDefinition,
     KvetchDbSingleConnectionPool,
     sync_kv_insert_object,
     sync_kv_get_object,
     sync_kv_get_objects,
     sync_kv_insert_index_entry,
     sync_kv_get_index_ids,
+    sync_kv_insert_edge,
+    sync_kv_get_edge_ids,
 )
 
 from graphscale.kvetch.kvetch_memshard import (
     KvetchMemShard,
     KvetchMemIndex,
+    KvetchMemEdgeDefinition,
 )
 
 from graphscale.kvetch.kvetch_dbschema import (
@@ -31,66 +35,63 @@ from graphscale.kvetch.kvetch_dbschema import (
 
 from .test_utils import MagnusConn
 
-def mem_single_index_shard():
-    related_index = KvetchMemIndex(
-        indexed_attr='related_id',
-        index_name='related_id_index',
+def mem_single_edge_shard():
+    related_edge = KvetchMemEdgeDefinition(
+        name='related_edge',
     )
-    indexes = {
-        'related_id_index': related_index,
+    edges = {
+        'related_edge': related_edge,
     }
-    return (KvetchMemShard(), indexes)
+    return (KvetchMemShard(), edges, {})
 
 
-def db_single_index_shard():
-    related_index = KvetchDbIndex(
-        indexed_attr='related_id',
-        indexed_sql_type='BINARY(16)',
-        index_name='related_id_index',
+def db_single_edge_shard():
+    related_edge = KvetchDbEdgeDefinition(
+        name='related_edge',
+        edge_id=12345,
     )
     shard = KvetchDbShard(
         pool=KvetchDbSingleConnectionPool(MagnusConn.get_conn()),
     )
-    indexes = {
-        'related_id_index': related_index,
+    indexes = {}
+    edges = {
+        'related_edge' : related_edge,
     }
     drop_shard_db_tables(shard, indexes)
     init_shard_db_tables(shard, indexes)
-    return (shard, indexes)
+    return (shard, edges, indexes)
 
 @pytest.fixture
 def only_shard():
-    shard, _ = test_shard_single_index()
+    shard, _, __ = test_shard_single_edge()
     return shard
 
 @pytest.fixture
-def test_shard_single_index():
-    return mem_single_index_shard()
-    # return db_single_index_shard()
+def test_shard_single_edge():
+    # return mem_single_edge_shard()
+    return db_single_edge_shard()
 
 @pytest.fixture
-def test_shard_double_index():
-    return mem_double_index_shard()
-    # return db_double_index_shard()
+def test_shard_single_index():
+    # return mem_edge_and_index_shard()
+    return db_edge_and_index_shard()
 
-def mem_double_index_shard():
-    related_index = KvetchMemIndex(
-        indexed_attr='related_id',
-        index_name='related_id_index',
+def mem_edge_and_index_shard():
+    related_edge = KvetchMemEdgeDefinition(
+        name='related_edge',
     )
     num_index = KvetchMemIndex(
         indexed_attr='num',
         index_name='num_index'
     )
-    indexes = {'related_id_index': related_index, 'num_index': num_index}
-    return (KvetchMemShard(), indexes)
+    edges = {'related_edge': related_edge}
+    indexes = {'num_index': num_index}
+    return (KvetchMemShard(), edges, indexes)
 
-
-def db_double_index_shard():
-    related_index = KvetchDbIndex(
-        indexed_attr='related_id',
-        indexed_sql_type='BINARY(16)',
-        index_name='related_id_index',
+def db_edge_and_index_shard():
+    related_edge = KvetchDbEdgeDefinition(
+        name='related_edge',
+        edge_id=12345,
     )
     num_index = KvetchDbIndex(
         indexed_attr='num',
@@ -100,18 +101,16 @@ def db_double_index_shard():
     shard = KvetchDbShard(
         pool=KvetchDbSingleConnectionPool(MagnusConn.get_conn()),
     )
-    indexes = {'related_id_index': related_index, 'num_index': num_index}
+    edges = {'related_edge': related_edge}
+    indexes = {'num_index': num_index}
     drop_shard_db_tables(shard, indexes)
     init_shard_db_tables(shard, indexes)
-    return shard, indexes
-
-
+    return shard, edges, indexes
 
 def insert_test_obj(shard, data):
     new_id = uuid4()
     sync_kv_insert_object(shard, new_id, 1000, data)
     return new_id
-
 
 def test_object_insert(only_shard):
     shard = only_shard
@@ -135,9 +134,7 @@ def test_objects_insert_get(only_shard):
     data_one = {'num': 4}
     data_two = {'num': 5}
     id_one = insert_test_obj(shard, data_one)
-    # sync_kv_insert_object(test_shard_single_index, id_one, 1000, data_one)
     id_two = insert_test_obj(shard, data_two)
-    # sync_kv_insert_object(test_shard_single_index, id_two, 1000, data_two)
     obj_dict = sync_kv_get_objects(shard, [id_one, id_two])
     assert len(obj_dict) == 2
     assert obj_dict[id_one]['id'] == id_one
@@ -171,7 +168,6 @@ def test_object_insert_id(only_shard):
     with pytest.raises(ValueError):
         sync_kv_insert_object(only_shard, 101, 1000, {})
 
-
 def test_null_shard():
     with pytest.raises(ValueError):
         sync_kv_insert_object(None, uuid4(), 1000, {'num': 234})
@@ -180,14 +176,13 @@ def test_null_shard():
     with pytest.raises(ValueError):
         sync_kv_get_objects(None, [uuid4()])
 
-
 def test_bad_args(only_shard):
     with pytest.raises(ValueError):
         sync_kv_get_object(only_shard, None)
 
 
-def test_id_index(test_shard_single_index):
-    shard, indexes = test_shard_single_index
+def test_id_edge(test_shard_single_edge):
+    shard, edges, _ = test_shard_single_edge
     data_one = {'num': 4}
     id_one = insert_test_obj(shard, data_one)
     data_two = {'num': 5, 'related_id': id_one}
@@ -195,20 +190,20 @@ def test_id_index(test_shard_single_index):
     data_three = {'num': 6, 'related_id': id_one}
     id_three = insert_test_obj(shard, data_three)
 
-    index_name = 'related_id_index'
-    related_index = indexes[index_name]
-    assert related_index is not None
-    sync_kv_insert_index_entry(shard, related_index, id_one, id_two)
-    sync_kv_insert_index_entry(shard, related_index, id_one, id_three)
-    ids = sync_kv_get_index_ids(shard, related_index, id_one)
+    edge_name = 'related_edge'
+    related_edge = edges[edge_name]
+    assert related_edge is not None
+    sync_kv_insert_edge(shard, related_edge, id_one, id_two)
+    sync_kv_insert_edge(shard, related_edge, id_one, id_three)
+    ids = sync_kv_get_edge_ids(shard, related_edge, id_one)
     assert len(ids) == 2
     assert id_one not in ids
     assert id_two in ids
     assert id_three in ids
 
 
-def test_string_index(test_shard_double_index):
-    shard, indexes = test_shard_double_index
+def test_string_index(test_shard_single_index):
+    shard, _, indexes = test_shard_single_index
     data_one = {'num': 4, 'related_id': None, 'text': 'first insert'}
     id_one = insert_test_obj(shard, data_one)
     data_two = {'num': 4, 'related_id': id_one, 'text': 'second insert'}
