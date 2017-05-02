@@ -2,8 +2,19 @@ from uuid import UUID
 
 from graphscale.pent.pent import Pent
 
-def data_elem_valid(data, key, klass):
+def req_data_elem_valid(data, key, klass):
     return (key in data) and data[key] and isinstance(data[key], klass)
+
+def req_data_elem_invalid(data, key, klass):
+    return not req_data_elem_valid(data, key, klass)
+
+def optional_data_elem_valid(data, key, klass):
+    if not data.get(key): # Falsely or not present is fine
+        return True
+    return isinstance(data[key], klass)
+
+def opt_data_elem_invalid(data, key, klass):
+    return not optional_data_elem_valid(data, key, klass)
 
 class TodoUserGenerated(Pent):
     @staticmethod
@@ -11,9 +22,9 @@ class TodoUserGenerated(Pent):
     def is_db_data_valid(data):
         if not isinstance(data, dict):
             return False
-        if not data_elem_valid(data, 'id', UUID): # id: ID!
+        if req_data_elem_invalid(data, 'id', UUID): # id: ID!
             return False
-        if not data_elem_valid(data, 'name', str): # name: String!
+        if req_data_elem_invalid(data, 'name', str): # name: String!
             return False
         return True
 
@@ -30,9 +41,9 @@ class TodoItemGenerated(Pent):
     def is_db_data_valid(data):
         if not isinstance(data, dict):
             return False
-        if not data_elem_valid(data, 'id', UUID): # id: ID!
+        if not req_data_elem_valid(data, 'id', UUID): # id: ID!
             return False
-        if not data_elem_valid(data, 'text', str): # text: String!
+        if not req_data_elem_valid(data, 'text', str): # text: String!
             return False
         return True
 

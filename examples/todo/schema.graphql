@@ -1,20 +1,35 @@
+@generatepent
 type TodoUser {
     id: ID!
     name: String!
     todos: [TodoItem]
 }
 
+@generatepent
 type TodoItem {
     id: ID!
     user: TodoUser
     text: String!
 }
 
+@generateinput(pent: "TodoUser")
 type TodoUserInput {
     name: String!
 }
 
+@generateinput(pent: "TodoItem")
 type TodoItemInput {
     user_id: ID!
     text: String!
+}
+
+type Mutation {
+    @generateCreate(pent: "TodoUser")
+    createTestUser(input: TodoUserInput) : TestUser
+
+    @generateUpdate(pent: "TodoUser")
+    updateTestUser(id: ID!, input: TodoUserInput) : TestUser
+
+    @generateDelete(pent: "TodoUser")
+    deleteTestUser(id: ID!)
 }
