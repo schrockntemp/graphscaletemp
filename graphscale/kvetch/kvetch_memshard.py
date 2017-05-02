@@ -9,7 +9,7 @@ from graphscale.kvetch.kvetch import (
     KvetchEdgeDefinition,
 )
 
-class KvetchMemIndex(KvetchIndexDefinition):
+class KvetchMemIndexDefinition(KvetchIndexDefinition):
     def __init__(self, *, indexed_attr, index_name):
         param_check(indexed_attr, str, 'indexed_attr')
         param_check(index_name, str, 'index_name')

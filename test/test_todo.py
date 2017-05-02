@@ -21,7 +21,7 @@ from graphscale.kvetch import (
 
 from graphscale.kvetch.kvetch_memshard import (
     KvetchMemShard,
-    KvetchMemIndex,
+    KvetchMemIndexDefinition,
 )
 
 from graphscale.kvetch.kvetch_dbschema import (
@@ -51,7 +51,7 @@ def test_cxt():
 
 def db_context():
     indexes = []
-    KvetchMemIndex(indexed_attr='user_id', index_name='todo_item_user_index')
+    KvetchMemIndexDefinition(indexed_attr='user_id', index_name='todo_item_user_index')
     shards = [KvetchDbShard(
         pool=KvetchDbSingleConnectionPool(MagnusConn.get_conn()),
     )]
@@ -64,7 +64,7 @@ def db_context():
 
 
 def mem_context():
-    indexes = [KvetchMemIndex(
+    indexes = [KvetchMemIndexDefinition(
         indexed_attr='user_id',
         index_name='todo_user_id_index'
     )]

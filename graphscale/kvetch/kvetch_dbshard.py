@@ -165,7 +165,7 @@ def sync_kv_get_edge_ids(shard, edge_def, from_id):
 class KvetchDbEdgeDefinition(KvetchEdgeDefinition):
     pass
 
-class KvetchDbIndex(KvetchIndexDefinition):
+class KvetchDbIndexDefinition(KvetchIndexDefinition):
     def __init__(self, *, indexed_attr, indexed_sql_type, index_name):
         param_check(indexed_attr, str, 'indexed_attr')
         param_check(indexed_sql_type, str, 'indexed_sql_type')

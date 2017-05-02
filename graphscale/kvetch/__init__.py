@@ -3,7 +3,7 @@
 from .kvetch_dbshard import (
     KvetchDbShard,
     KvetchDbSingleConnectionPool,
-    KvetchDbIndex,
+    KvetchDbIndexDefinition,
 )
 
 from .kvetch import (
@@ -14,5 +14,5 @@ __all__ = [
     'Kvetch',
     'KvetchDbShard',
     'KvetchDbSingleConnectionPool',
-    'KvetchShardIndex',
+    'KvetchIndexDefinition',
  ]

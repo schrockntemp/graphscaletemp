@@ -7,7 +7,7 @@ import pytest
 
 from graphscale.kvetch.kvetch_dbshard import (
     KvetchDbShard,
-    KvetchDbIndex,
+    KvetchDbIndexDefinition,
     KvetchDbEdgeDefinition,
     KvetchDbSingleConnectionPool,
     sync_kv_insert_object,
@@ -21,7 +21,7 @@ from graphscale.kvetch.kvetch_dbshard import (
 
 from graphscale.kvetch.kvetch_memshard import (
     KvetchMemShard,
-    KvetchMemIndex,
+    KvetchMemIndexDefinition,
     KvetchMemEdgeDefinition,
 )
 
@@ -82,7 +82,7 @@ def mem_edge_and_index_shard():
         edge_id=12345,
         from_id_attr='related_id',
     )
-    num_index = KvetchMemIndex(
+    num_index = KvetchMemIndexDefinition(
         indexed_attr='num',
         index_name='num_index'
     )
@@ -96,7 +96,7 @@ def db_edge_and_index_shard():
         edge_id=12345,
         from_id_attr='related_id'
     )
-    num_index = KvetchDbIndex(
+    num_index = KvetchDbIndexDefinition(
         indexed_attr='num',
         indexed_sql_type='INT',
         index_name='num_index'

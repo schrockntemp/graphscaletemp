@@ -5,7 +5,7 @@ import pytest
 from graphscale.kvetch import Kvetch
 from graphscale.kvetch.kvetch_memshard import (
     KvetchMemShard,
-    KvetchMemIndex,
+    KvetchMemIndexDefinition,
     KvetchMemEdgeDefinition,
 )
 
@@ -58,7 +58,7 @@ def single_edge_kvetch(request):
     return request.param()
 
 def single_shard_single_index():
-    num_index = KvetchMemIndex(indexed_attr='num', index_name='num_index')
+    num_index = KvetchMemIndexDefinition(indexed_attr='num', index_name='num_index')
     return Kvetch(shards=[KvetchMemShard()], edges=[], indexes=[num_index])
 
 @pytest.fixture
