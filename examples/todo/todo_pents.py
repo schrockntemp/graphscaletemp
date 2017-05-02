@@ -1,12 +1,7 @@
-from uuid import UUID
-
-from graphscale.pent.pent import Pent, PentConfig, create_pent
+from graphscale.pent.pent import PentConfig, create_pent
 from graphscale.utils import param_check
 
 from .generated.todo_pents_generated import TodoUserGenerated, TodoItemGenerated
-
-def data_elem_valid(data, key, klass):
-    return (key in data) and data[key] and isinstance(data[key], klass)
 
 class TodoUser(TodoUserGenerated):
     pass
