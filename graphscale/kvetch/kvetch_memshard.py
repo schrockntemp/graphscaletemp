@@ -5,10 +5,11 @@ from graphscale.utils import param_check
 
 from graphscale.kvetch.kvetch import (
     KvetchShard,
-    KvetchShardIndex,
+    KvetchIndexDefinition,
+    KvetchEdgeDefinition,
 )
 
-class KvetchMemIndex(KvetchShardIndex):
+class KvetchMemIndex(KvetchIndexDefinition):
     def __init__(self, *, indexed_attr, index_name):
         param_check(indexed_attr, str, 'indexed_attr')
         param_check(index_name, str, 'index_name')
@@ -22,12 +23,8 @@ class KvetchMemIndex(KvetchShardIndex):
     def indexed_attr(self):
         return self._indexed_attr
 
-class KvetchMemEdgeDefinition:
-    def __init__(self, *, name):
-        self._name = name
-
-    def name(self):
-        return self._name
+class KvetchMemEdgeDefinition(KvetchEdgeDefinition):
+    pass
 
 def safe_append_to_dict_of_list(dict_of_list, key, value):
     if key not in dict_of_list:
@@ -63,7 +60,7 @@ class KvetchMemShard(KvetchShard):
     async def gen_index_entries(self, index, index_value):
         index_dict = self._all_indexes[index.index_name()]
         return index_dict[index_value]
-
+    
     async def gen_insert_object(self, new_id, type_id, data):
         self.check_insert_object_vars(new_id, type_id, data)
 
@@ -80,7 +77,7 @@ class KvetchMemShard(KvetchShard):
             data = {}
         param_check(data, dict, 'data')
 
-        edge_name = edge_definition.name()
+        edge_name = edge_definition.edge_name()
         if edge_name not in self._all_edges:
             self._all_edges[edge_name] = {}
 
@@ -88,8 +85,8 @@ class KvetchMemShard(KvetchShard):
         safe_append_to_dict_of_list(self._all_edges[edge_name], from_id, edge_entry)
 
     async def gen_edges(self, edge_definition, from_id):
-        return self._all_edges[edge_definition.name()][from_id]
+        return self._all_edges[edge_definition.edge_name()][from_id]
 
     async def gen_edge_ids(self, edge_definition, from_id):
-        edges = self._all_edges[edge_definition.name()][from_id]
+        edges = self._all_edges[edge_definition.edge_name()][from_id]
         return [edge['to_id'] for edge in edges]

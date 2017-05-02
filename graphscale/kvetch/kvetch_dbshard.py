@@ -13,7 +13,8 @@ from graphscale.utils import (
 
 from graphscale.kvetch.kvetch import (
     KvetchShard,
-    KvetchShardIndex,
+    KvetchIndexDefinition,
+    KvetchEdgeDefinition,
 )
 
 def data_to_body(data):
@@ -161,20 +162,10 @@ def sync_kv_get_index_ids(shard, index, index_value):
 def sync_kv_get_edge_ids(shard, edge_def, from_id):
     return execute_coro(shard.gen_edge_ids(edge_def, from_id))
 
-class KvetchDbEdgeDefinition:
-    def __init__(self, *, name, edge_id):
-        param_check(name, str, 'name')
-        param_check(edge_id, int, 'edge_id')
-        self._name = name
-        self._edge_id = edge_id
+class KvetchDbEdgeDefinition(KvetchEdgeDefinition):
+    pass
 
-    def name(self):
-        return self._name
-
-    def edge_id(self):
-        return self._edge_id
-
-class KvetchDbIndex(KvetchShardIndex):
+class KvetchDbIndex(KvetchIndexDefinition):
     def __init__(self, *, indexed_attr, indexed_sql_type, index_name):
         param_check(indexed_attr, str, 'indexed_attr')
         param_check(indexed_sql_type, str, 'indexed_sql_type')

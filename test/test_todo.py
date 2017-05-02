@@ -1,6 +1,6 @@
 from uuid import uuid4
 from examples.todo.todo_pents import (
-    Pent,
+
     TodoUser,
     TodoUserInput,
     TodoItem,

@@ -18,24 +18,40 @@ class KvetchShard:
             raise ValueError('Cannot specify __type_id')
 
 
-class KvetchShardIndex:
+class KvetchIndexDefinition:
     async def gen_all(self, _shard, _value):
         raise Exception('must implement')
 
-class KvetchEdgeTable:
-    pass
+class KvetchEdgeDefinition:
+    def __init__(self, *, edge_name, edge_id, from_id_attr):
+        self._edge_name = edge_name
+        self._edge_id = edge_id
+        self._from_id_attr = from_id_attr
+
+    def edge_name(self):
+        return self._edge_name
+
+    def edge_id(self):
+        return self._edge_id
+
+    def from_id_attr(self):
+        return self._from_id_attr
 
 class Kvetch:
-    def __init__(self, *, shards, indexes):
+    def __init__(self, *, shards, edges, indexes):
         self._shards = shards
         # shard => shard_id
         self._shard_lookup = dict(zip(self._shards, range(0, len(shards))))
         # index_name => index
         self._index_dict = dict(zip([index.index_name() for index in indexes], indexes))
+        self._edge_dict = dict(zip([edge.edge_name() for edge in edges], edges))
 
     def get_index(self, index_name):
         param_check(index_name, str, 'index_name')
         return self._index_dict[index_name]
+
+    def get_edge_definition_by_name(self, edge_name):
+        return next(edge for edge in self._edge_dict.values() if edge.edge_name() == edge_name)
 
     def get_shard_from_obj_id(self, obj_id):
         param_check(obj_id, UUID, 'obj_id')
@@ -55,20 +71,28 @@ class Kvetch:
         param_check(type_id, int, 'type_id')
         param_check(data, dict, 'data')
         new_id = self.create_new_id()
-
         shard = self.get_shard_from_obj_id(new_id)
         await shard.gen_insert_object(new_id, type_id, data)
 
-        for index_name, index in self._index_dict.items():
-            attr = index.indexed_attr()
-            if not(attr in data) or data[attr]:
+        for edge_definition in self._edge_dict.values():
+            attr = edge_definition.from_id_attr()
+            if not(attr in data) or not data[attr]:
                 continue
 
-            # TODDO select correct shard with shard_on variable incorporatd
-            indexed_id = data[attr]
-            indexed_shard = self.get_shard_from_obj_id(indexed_id)
-            await indexed_shard.gen_insert_index_entry(index_name, indexed_id, new_id)
-            # actually insert the data now
+            from_id = data[attr]
+            from_id_shard = self.get_shard_from_obj_id(from_id)
+            await from_id_shard.gen_insert_edge(edge_definition, from_id, new_id, {})
+
+
+        ## TODDO implement this properly
+        for index_name, index in self._index_dict.items():
+            attr = index.indexed_attr()
+            if not(attr in data) or not data[attr]:
+                continue
+
+            indexed_value = data[attr]
+            indexed_shard = self.get_shard_from_obj_id(new_id)
+            await indexed_shard.gen_insert_index_entry(index, indexed_value, new_id)
 
         return new_id
 
@@ -101,17 +125,14 @@ class Kvetch:
                 results[id_] = obj
         return results
 
-    async def gen_all(self, index, from_value):
-        pass 
-        # if index.shard_strategy() == ShardStrategyEnum.INDEXED_VALUE:
-        #     if not isinstance(from_value, UUID):
-        #         raise Exception('for target id strategy value must be UUID')
-        #     target_id = from_value
-        #     shard = self.get_shard_from_obj_id(target_id)
-        #     index_entries = await shard.gen_index_entries(self, target_id)
-        #     ids = [index_entry['target_id'] for index_entry in index_entries]
-        #     return await shard.gen_objects(ids)
-        # elif index.shard_strategy() == ShardStrategyEnum.TARGET_ID:
-        #     raise Exception('TARGET_ID not implemented yet')
-        # else:
-        #     raise Exception('strategy not supported: ' + str(index.shard_strategy()))
+    async def gen_edges(self, edge_definition, from_id):
+        shard = self.get_shard_from_obj_id(from_id)
+        return await shard.gen_edges(edge_definition, from_id)
+
+    async def gen_from_index(self, index, index_value):
+        ids = []
+        for shard in self._shards:
+            index_entries = await shard.gen_index_entries(index, index_value)
+            ids.extend([entry['target_id'] for entry in index_entries])
+        
+        return await self.gen_objects(ids)

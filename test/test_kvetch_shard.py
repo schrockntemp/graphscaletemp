@@ -1,8 +1,5 @@
 from uuid import UUID, uuid4
 
-import pymysql
-import pymysql.cursors
-
 #W0621 display redefine variable for test fixture
 #pylint: disable=W0621,C0103,W0401,W0614
 
@@ -37,7 +34,9 @@ from .test_utils import MagnusConn
 
 def mem_single_edge_shard():
     related_edge = KvetchMemEdgeDefinition(
-        name='related_edge',
+        edge_name='related_edge',
+        edge_id=12345,
+        from_id_attr='related_id',
     )
     edges = {
         'related_edge': related_edge,
@@ -47,8 +46,9 @@ def mem_single_edge_shard():
 
 def db_single_edge_shard():
     related_edge = KvetchDbEdgeDefinition(
-        name='related_edge',
+        edge_name='related_edge',
         edge_id=12345,
+        from_id_attr='related_id',
     )
     shard = KvetchDbShard(
         pool=KvetchDbSingleConnectionPool(MagnusConn.get_conn()),
@@ -68,17 +68,19 @@ def only_shard():
 
 @pytest.fixture
 def test_shard_single_edge():
-    # return mem_single_edge_shard()
-    return db_single_edge_shard()
+    return mem_single_edge_shard()
+    # return db_single_edge_shard()
 
 @pytest.fixture
 def test_shard_single_index():
-    # return mem_edge_and_index_shard()
-    return db_edge_and_index_shard()
+    return mem_edge_and_index_shard()
+    # return db_edge_and_index_shard()
 
 def mem_edge_and_index_shard():
     related_edge = KvetchMemEdgeDefinition(
-        name='related_edge',
+        edge_name='related_edge',
+        edge_id=12345,
+        from_id_attr='related_id',
     )
     num_index = KvetchMemIndex(
         indexed_attr='num',
@@ -90,8 +92,9 @@ def mem_edge_and_index_shard():
 
 def db_edge_and_index_shard():
     related_edge = KvetchDbEdgeDefinition(
-        name='related_edge',
+        edge_name='related_edge',
         edge_id=12345,
+        from_id_attr='related_id'
     )
     num_index = KvetchDbIndex(
         indexed_attr='num',
