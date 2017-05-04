@@ -9,7 +9,10 @@ from graphscale.utils import param_check
 
 def parse_grapple(grapple_string):
     ast = parse(Source(grapple_string))
-    grapple_types = [create_grapple_type_definition(type_node) for type_node in ast.definitions]
+    grapple_types = []
+    for type_node in ast.definitions:
+        if has_generate_pent_directive(type_node):
+            grapple_types.append(create_grapple_type_definition(type_node))
     return GrappleDocument(object_types=grapple_types)
 
 def print_grapple(document_ast):
@@ -78,8 +81,7 @@ def has_generate_pent_directive(type_ast):
 
 def create_grapple_type_definition(type_ast):
     if isinstance(type_ast, ObjectTypeDefinition):
-        if has_generate_pent_directive(type_ast):
-            return create_grapple_object_type(type_ast)
+        return create_grapple_object_type(type_ast)
     else:
         raise Exception('node not supported: ' + str(type_ast))
 

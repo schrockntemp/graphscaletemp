@@ -4,6 +4,54 @@ from graphscale.grapple.grapple_parser import (
     graphql_type_to_python_type,
 )
 
+def test_no_grapple_types():
+    grapple_string = """type TestObjectField {bar: FooBar}"""
+    grapple_document = parse_grapple(grapple_string)
+    output = print_grapple(grapple_document)
+    assert output == ""
+
+def test_ignore_type():
+    grapple_string = """type TestObjectField @generatePent {bar: FooBar} type Other { }"""
+    grapple_document = parse_grapple(grapple_string)
+    output = print_grapple(grapple_document)
+    assert output == \
+"""class TestObjectFieldGenerated(Pent):
+
+    @staticmethod
+    # This method checks to see that data coming out of the database is valid
+    def is_db_data_valid(data):
+        if not isinstance(data, dict):
+            return False
+        if opt_data_elem_invalid(data, 'bar', FooBar): # bar: FooBar
+            return False
+        return True
+
+    def bar(self):
+        return self._data.get('bar')
+
+"""
+
+def test_required_object_field():
+    grapple_string = """type TestObjectField @generatePent {bar: FooBar!}"""
+    grapple_document = parse_grapple(grapple_string)
+    output = print_grapple(grapple_document)
+    assert output == \
+"""class TestObjectFieldGenerated(Pent):
+
+    @staticmethod
+    # This method checks to see that data coming out of the database is valid
+    def is_db_data_valid(data):
+        if not isinstance(data, dict):
+            return False
+        if req_data_elem_invalid(data, 'bar', FooBar): # bar: FooBar!
+            return False
+        return True
+
+    def bar(self):
+        return self._data['bar']
+
+"""
+
 def test_object_field():
     grapple_string = """type TestObjectField @generatePent {bar: FooBar}"""
     grapple_document = parse_grapple(grapple_string)
@@ -24,7 +72,6 @@ def test_object_field():
         return self._data.get('bar')
 
 """
-
 
 def test_required_field():
     grapple_string = """type TestRequired @generatePent {id: ID!, name: String!}"""
