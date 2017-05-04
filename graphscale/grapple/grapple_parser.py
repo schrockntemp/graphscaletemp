@@ -220,4 +220,3 @@ def print_generated_fields(writer, fields):
             writer.line("return self._data['%s']" % field.name())
         writer.decrease_indent() # end property definition
         writer.blank_line()
-

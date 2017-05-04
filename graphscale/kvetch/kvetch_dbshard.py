@@ -1,7 +1,7 @@
 import pickle
 import zlib
 from datetime import datetime
-from uuid import UUID 
+from uuid import UUID
 
 from pymysql.connections import Connection
 
@@ -103,7 +103,7 @@ def _kv_shard_get_edges(
             'from_id': UUID(bytes=row['from_id']),
             'to_id': UUID(bytes=row['to_id']),
             'data': body_to_data(row['body']),
-        }) 
+        })
     return edges
 
 def _kv_shard_get_index_entries(shard_conn, index_name, index_column, index_value, target_column):
@@ -189,7 +189,7 @@ class KvetchDbShard(KvetchShard):
 
     @staticmethod
     def fromconn(conn):
-        return KvetchDbShard(pool=KvetchDbSingleConnectionPool(conn), indexes=[])
+        return KvetchDbShard(pool=KvetchDbSingleConnectionPool(conn)) 
 
     def conn(self):
         return self._pool.conn()
@@ -229,13 +229,13 @@ class KvetchDbShard(KvetchShard):
         return new_id
 
     async def gen_edges(self, edge_definition, from_id):
-        param_check(from_id, UUID, 'from_id') 
+        param_check(from_id, UUID, 'from_id')
         return _kv_shard_get_edges(self.conn(), edge_definition.edge_id(), from_id)
-        
+
     async def gen_edge_ids(self, edge_definition, from_id):
         edges = await self.gen_edges(edge_definition, from_id)
         return [edge['to_id'] for edge in edges]
-        
+
     async def gen_index_entries(self, index, value):
         return _kv_shard_get_index_entries(
             shard_conn=self.conn(),

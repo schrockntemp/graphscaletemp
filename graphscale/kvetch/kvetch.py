@@ -1,10 +1,5 @@
-from enum import auto, Enum
 from uuid import UUID, uuid4
 from graphscale.utils import param_check, async_array
-
-class ShardStrategyEnum(Enum):
-    INDEXED_VALUE = auto() # example id => id one to many relation. searches single shard
-    TARGET_ID = auto() # example. str => id. searches across all shards
 
 class KvetchShard:
     def check_insert_object_vars(self, new_id, type_id, data):
@@ -16,7 +11,6 @@ class KvetchShard:
 
         if '__type_id' in data:
             raise ValueError('Cannot specify __type_id')
-
 
 class KvetchIndexDefinition:
     async def gen_all(self, _shard, _value):
@@ -85,7 +79,7 @@ class Kvetch:
 
 
         ## TODDO implement this properly
-        for index_name, index in self._index_dict.items():
+        for index in self._index_dict.values():
             attr = index.indexed_attr()
             if not(attr in data) or not data[attr]:
                 continue
@@ -125,7 +119,7 @@ class Kvetch:
                 results[id_] = obj
         return results
 
-    async def gen_edges(self, edge_definition, from_id, after=None, first=None):
+    async def gen_edges(self, edge_definition, from_id, _after=None, _first=None):
         shard = self.get_shard_from_obj_id(from_id)
         return await shard.gen_edges(edge_definition, from_id)
 
@@ -134,5 +128,5 @@ class Kvetch:
         for shard in self._shards:
             index_entries = await shard.gen_index_entries(index, index_value)
             ids.extend([entry['target_id'] for entry in index_entries])
-        
+
         return await self.gen_objects(ids)
