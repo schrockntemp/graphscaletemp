@@ -23,6 +23,11 @@ type TodoItemInput {
     text: String!
 }
 
+type Query {
+    user(id: ID!): TodoUser
+    allUsers(first: Int, after: ID)
+}
+
 type Mutation {
     @generateCreate(pent: "TodoUser")
     createTestUser(input: TodoUserInput) : TestUser
