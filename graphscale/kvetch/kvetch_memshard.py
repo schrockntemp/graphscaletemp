@@ -86,7 +86,8 @@ class KvetchMemShard(KvetchShard):
             'edge_id': edge_definition.edge_id(),
             'from_id': from_id,
             'to_id': to_id,
-            'data': data
+            'data': data,
+            'updated': datetime.now()
         }
         safe_append_to_dict_of_list(self._all_edges[edge_name], from_id, edge_entry)
 

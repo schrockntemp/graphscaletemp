@@ -6,9 +6,10 @@ from graphql import (
     GraphQLField,
     GraphQLString,
     GraphQLArgument,
+    GraphQLList,
 )
 
-from examples.todo.todo_pents import TodoUser
+from examples.todo.todo_pents import TodoUser, TodoItem
 
 def get_pent_genner(klass):
     async def genner(_parent, args, context, *_):
@@ -23,6 +24,9 @@ def define_top_level_getter(graphql_type, pent_type):
         resolver=get_pent_genner(pent_type)
     )
 
+async def gen_todo_items(user, args, _context, *_):
+    return await user.gen_todo_items(after=args.get('after'), first=args.get('first'))
+
 class GraphQLTodoUser:
     _memo = None
     @staticmethod
@@ -33,13 +37,29 @@ class GraphQLTodoUser:
         GraphQLTodoUser._memo = GraphQLObjectType(
             name='TodoUser',
             fields={
-                'name': GraphQLField(
-                    type=GraphQLString,
-                    resolver=lambda user, *_: user.name(),
+                'name': GraphQLField(type=GraphQLString),
+                'todoItems': GraphQLField(
+                    type=GraphQLList(GraphQLTodoItem.type()),
+                    resolver=gen_todo_items
                 ),
             },
         )
         return GraphQLTodoUser._memo
+
+class GraphQLTodoItem:
+    _memo = None
+    @staticmethod
+    def type():
+        if GraphQLTodoItem._memo is not None:
+            return GraphQLTodoItem._memo
+
+        GraphQLTodoItem._memo = GraphQLObjectType(
+            name='TodoItem',
+            fields={
+                'text': GraphQLField(type=GraphQLString),
+            },
+        )
+        return GraphQLTodoItem._memo
 
 def create_todo_schema():
     return GraphQLSchema(
@@ -47,13 +67,7 @@ def create_todo_schema():
             name='Query',
             fields={
                 'user': define_top_level_getter(GraphQLTodoUser.type(), TodoUser),
-                #'user': GraphQLField(
-                #    type=todo_user_type(),
-                #    args={
-                #        'id': GraphQLArgument(type=GraphQLString)
-                #    },
-                #    resolver=get_pent_genner(TodoUser),
-                #),
+                'todoItem': define_top_level_getter(GraphQLTodoItem.type(), TodoItem),
             },
         ),
     )

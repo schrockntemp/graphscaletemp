@@ -5,9 +5,12 @@ from examples.todo.todo_graphql import create_todo_schema
 
 from examples.todo.todo_pents import (
     get_todo_config,
-    TodoUser,
     create_todo_user,
+    create_todo_item,
+    TodoUser,
     TodoUserInput,
+    TodoItem,
+    TodoItemInput,
 )
 
 def create_fake_schema():
@@ -91,6 +94,32 @@ def test_get_user():
     query = '{ user(id: "%s") { name } }' % new_id
     result = execute_todo_query(query, pent_context)
     assert result.data['user']['name'] == 'John Doe'
+
+def test_get_item():
+    pent_context = mem_context()
+    user_input = TodoUserInput(name='John Doe')
+    user = execute_coro(create_todo_user(pent_context, user_input))
+    todo_input_one = TodoItemInput(user_id=user.id_(), text='something one')
+    todo_one = execute_coro(create_todo_item(pent_context, todo_input_one))
+    assert todo_one.text() == 'something one'
+
+    todo_input_two = TodoItemInput(user_id=user.id_(), text='something two')
+    todo_two = execute_coro(create_todo_item(pent_context, todo_input_two))
+    assert todo_two.text() == 'something two'
+
+    todo_user_out = execute_coro(todo_one.gen_user())
+    assert todo_user_out.name() == 'John Doe'
+
+    query = '{ todoItem(id: "%s") { text } }' % todo_one.id_()
+    result = execute_todo_query(query, pent_context)
+    assert result.data['todoItem']['text'] == 'something one'
+
+    query = '{ user (id: "%s") { todoItems { text } } }' % user.id_()
+    result = execute_todo_query(query, pent_context)
+
+    ## I don't understand why this doesn't fail half the time
+    assert result.data['user']['todoItems'][0]['text'] == 'something one'
+    assert result.data['user']['todoItems'][1]['text'] == 'something two'
 
 def mem_context():
     edges = [KvetchMemEdgeDefinition(
