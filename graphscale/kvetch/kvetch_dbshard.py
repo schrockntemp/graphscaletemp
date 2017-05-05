@@ -158,8 +158,8 @@ def sync_kv_get_index_ids(shard, index, index_value):
     entries = sync_kv_get_index_entries(shard, index, index_value)
     return [entry['target_id'] for entry in entries]
 
-def sync_kv_get_edge_ids(shard, edge_def, from_id):
-    return execute_coro(shard.gen_edge_ids(edge_def, from_id))
+def sync_kv_get_edge_ids(shard, edge_def, from_id, after=None, first=None):
+    return execute_coro(shard.gen_edge_ids(edge_def, from_id, after, first))
 
 class KvetchDbEdgeDefinition(KvetchEdgeDefinition):
     pass

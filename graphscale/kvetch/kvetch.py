@@ -77,8 +77,6 @@ class Kvetch:
             from_id_shard = self.get_shard_from_obj_id(from_id)
             await from_id_shard.gen_insert_edge(edge_definition, from_id, new_id, {})
 
-
-        ## TODDO implement this properly
         for index in self._index_dict.values():
             attr = index.indexed_attr()
             if not(attr in data) or not data[attr]:
@@ -105,12 +103,12 @@ class Kvetch:
             shard_to_ids[shard_id].append(id_)
 
         # construct list of coros (one per shard) in order to fetch in parallel
-        coros = []
+        unawaited_gens = []
         for shard_id, ids_in_shard in shard_to_ids.items():
             shard = self._shards[shard_id]
-            coros.append(shard.gen_objects(ids_in_shard))
+            unawaited_gens.append(shard.gen_objects(ids_in_shard))
 
-        obj_dict_per_shard = await async_array(coros)
+        obj_dict_per_shard = await async_array(unawaited_gens)
 
         # flatten results into single dict
         results = {}

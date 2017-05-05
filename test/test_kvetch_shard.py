@@ -205,6 +205,80 @@ def test_id_edge(test_shard_single_edge):
     assert id_three in ids
 
 
+@pytest.mark.ignore
+def test_first_edge(test_shard_single_edge):
+    shard, edges, _ = test_shard_single_edge
+    id_one = UUID('2b17b4d6-ad4f-4549-ab99-dece5451be6a')
+    id_two = UUID('2fb72eaa-bfba-4899-935d-52c54e05f16e')
+    id_three = UUID('49b9c3d2-7c61-4890-aed7-3a194e255413')
+    id_four = UUID('87cab1b5-2275-4526-8824-21384d6fde54')
+
+    sync_kv_insert_object(shard, id_one, 1000, {})
+    sync_kv_insert_object(shard, id_two, 1000, {})
+    sync_kv_insert_object(shard, id_three, 1000, {})
+    sync_kv_insert_object(shard, id_four, 1000, {})
+
+    related_edge = edges['related_edge']
+
+    sync_kv_insert_edge(shard, related_edge, id_one, id_two)
+    sync_kv_insert_edge(shard, related_edge, id_one, id_three)
+    sync_kv_insert_edge(shard, related_edge, id_one, id_four)
+
+    assert len(sync_kv_get_edge_ids(shard, related_edge, id_one)) == 3
+    before_id_one = UUID('1b17b4d6-ad4f-4549-ab99-dece5451be6a')
+
+    def get_after(a, f=None):
+        return sync_kv_get_edge_ids(shard, related_edge, id_one, after=a, first=f)
+
+    assert len(get_after(before_id_one)) == 3
+
+    assert len(get_after(id_two)) == 2
+    assert not id_two in get_after(id_two)
+    assert id_three in get_after(id_two)
+    assert id_four in get_after(id_two)
+
+    assert len(get_after(id_three)) == 1
+    assert not id_two in get_after(id_three)
+    assert not id_three in get_after(id_three)
+    assert id_four in get_after(id_three)
+
+    assert len(get_after(id_four)) == 0
+
+    assert len(get_after(id_two, 1)) == 1
+    assert not id_two in get_after(id_two, 1)
+    assert id_three in get_after(id_two, 1)
+    assert not id_four in get_after(id_two, 1)
+
+    # sync_kv_insert_edge(shard, related_edge, id_one, id_two)
+    # sync_kv_insert_edge(shard, related_edge, id_one, id_three)
+    # edge_ids = sync_kv_get_edge_ids(shard, related_edge, id_one, first=1)
+    # assert len(edge_ids) == 1
+
+def test_after_edge(test_shard_single_edge):
+    shard, edges, _ = test_shard_single_edge
+    id_one = UUID('2b17b4d6-ad4f-4549-ab99-dece5451be6a')
+    id_two = UUID('2fb72eaa-bfba-4899-935d-52c54e05f16e')
+    id_three = UUID('49b9c3d2-7c61-4890-aed7-3a194e255413')
+    data_one = {'num': 4}
+    data_two = {'num': 5, 'related_id': id_one}
+    data_three = {'num': 6, 'related_id': id_one}
+    sync_kv_insert_object(shard, id_one, 1000, data_one)
+    sync_kv_insert_object(shard, id_two, 1000, data_two)
+    sync_kv_insert_object(shard, id_three, 1000, data_three)
+
+    related_edge = edges['related_edge']
+    assert related_edge is not None
+
+    sync_kv_insert_edge(shard, related_edge, id_one, id_two)
+    sync_kv_insert_edge(shard, related_edge, id_one, id_three)
+
+    all_edge_ids = sync_kv_get_edge_ids(shard, related_edge, id_one)
+    assert all_edge_ids == [id_two, id_three]
+    edge_ids = sync_kv_get_edge_ids(shard, related_edge, id_one, after=id_two)
+    assert len(edge_ids) == 1
+    assert not id_two in edge_ids
+    assert id_three in edge_ids
+
 def test_string_index(test_shard_single_index):
     shard, _, indexes = test_shard_single_index
     data_one = {'num': 4, 'related_id': None, 'text': 'first insert'}

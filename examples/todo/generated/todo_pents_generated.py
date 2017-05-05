@@ -38,5 +38,5 @@ class TodoItemGenerated(Pent):
         return self._data['text']
 
     async def gen_user(self):
-        klass = self.config().get_type(1000) #type_id
+        klass = self.config().get_type(1000) # type_id
         return await klass.gen(self._context, self._data['user_id'])

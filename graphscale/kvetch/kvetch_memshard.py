@@ -1,5 +1,6 @@
 from datetime import datetime
 from uuid import UUID
+from functools import cmp_to_key
 
 from graphscale.utils import param_check
 
@@ -60,7 +61,7 @@ class KvetchMemShard(KvetchShard):
     async def gen_index_entries(self, index, index_value):
         index_dict = self._all_indexes[index.index_name()]
         return index_dict[index_value]
-    
+
     async def gen_insert_object(self, new_id, type_id, data):
         self.check_insert_object_vars(new_id, type_id, data)
 
@@ -81,12 +82,37 @@ class KvetchMemShard(KvetchShard):
         if edge_name not in self._all_edges:
             self._all_edges[edge_name] = {}
 
-        edge_entry = {'from_id': from_id, 'to_id': to_id, 'data': data}
+        edge_entry = {
+            'edge_id': edge_definition.edge_id(),
+            'from_id': from_id,
+            'to_id': to_id,
+            'data': data
+        }
         safe_append_to_dict_of_list(self._all_edges[edge_name], from_id, edge_entry)
 
-    async def gen_edges(self, edge_definition, from_id):
-        return self._all_edges[edge_definition.edge_name()][from_id]
+        sorted(self._all_edges[edge_name][from_id], key=lambda edge: edge['to_id'])
 
-    async def gen_edge_ids(self, edge_definition, from_id):
-        edges = self._all_edges[edge_definition.edge_name()][from_id]
+    def get_after_index(self, edges, after):
+        count = 0
+        for edge in edges:
+            if after < edge['to_id']:
+                return count
+            count += 1
+        return count
+
+    async def gen_edges(self, edge_definition, from_id, after=None, first=None):
+        param_check(from_id, UUID, 'from_id')
+        edges = self._all_edges[edge_definition.edge_name()].get(from_id, [])
+
+        if after:
+            count = self.get_after_index(edges, after) 
+            edges = edges[count:]
+
+        if first:
+            edges = edges[0:first]
+
+        return edges
+
+    async def gen_edge_ids(self, edge_definition, from_id, after=None, first=None):
+        edges = await self.gen_edges(edge_definition, from_id, after, first)
         return [edge['to_id'] for edge in edges]
