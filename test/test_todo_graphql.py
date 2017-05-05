@@ -26,9 +26,6 @@ from graphscale.utils import execute_coro
 
 from graphql.execution.executors.asyncio import AsyncioExecutor
 
-import pytest
-import asyncio
-
 class TestContext:
     pass
 
@@ -62,6 +59,7 @@ def test_get_user():
     new_id = user.id_()
     query = '{ user(id: "%s") { name } }' % new_id
     result = execute_todo_query(query, pent_context)
+    assert result.data['user']['name'] == 'John Doe'
 
 def mem_context():
     edges = [KvetchMemEdgeDefinition(
@@ -70,9 +68,6 @@ def mem_context():
         from_id_attr='user_id',
     )]
     shard = KvetchMemShard()
-    # new_id = UUID('96ba2c75-2a3e-47b5-b9a2-9b4d5804f11f')
-    # type_id = 1000
-    # await shard.gen_insert_object(new_id, type_id, data={name: }
     kvetch = Kvetch(shards=[shard], edges=edges, indexes=[])
     pent_context = PentContext(
         kvetch=kvetch,
