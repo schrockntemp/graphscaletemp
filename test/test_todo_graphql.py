@@ -1,3 +1,5 @@
+import asyncio
+
 from graphql import (graphql)
 from examples.todo.todo_graphql import create_todo_schema
 
@@ -6,6 +8,35 @@ from examples.todo.todo_pents import (
     TodoUser,
     create_todo_user,
     TodoUserInput,
+)
+
+def create_fake_schema():
+    return GraphQLSchema(
+        query=GraphQLObjectType(
+            name='Query',
+            fields={
+                'hello': GraphQLField(
+                    type=GraphQLString,
+                    resolver=lambda *_: 'world',
+                ),
+                'return_arg': GraphQLField(
+                    type=GraphQLString,
+                    args={
+                        'value': GraphQLArgument(type=GraphQLString),
+                    },
+                    resolver=lambda _s, args, *_: args['value']
+                ),
+            },
+        ),
+    )
+
+from graphql import (
+    graphql,
+    GraphQLSchema,
+    GraphQLObjectType,
+    GraphQLField,
+    GraphQLString,
+    GraphQLArgument,
 )
 
 from graphscale.kvetch import Kvetch
@@ -43,12 +74,12 @@ def execute_todo_query(query, context_value=None):
 
 def test_hello():
     query = '{ hello }'
-    result = execute_todo_query(query)
+    result = graphql(create_fake_schema(), query)
     assert result.data['hello'] == 'world'
 
 def test_arg():
     query = '{ return_arg(value: "hello") }'
-    result = execute_todo_query(query)
+    result = graphql(create_fake_schema(), query)
     assert result.data['return_arg'] == 'hello'
 
 def test_get_user():
