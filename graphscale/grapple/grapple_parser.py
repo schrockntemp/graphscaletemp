@@ -166,7 +166,7 @@ def print_generated_pent(writer, grapple_type):
     writer.line('class %sGenerated(Pent):' % grapple_type.name())
     writer.increase_indent() # begin class implementation
     writer.blank_line()
-    print_is_db_data_valid(writer, grapple_type)
+    print_is_input_data_valid(writer, grapple_type)
     print_generated_fields(writer, grapple_type.fields())
     writer.decrease_indent() # end class definition
 
@@ -176,11 +176,11 @@ def print_if_return_false(writer, if_line):
     writer.line('return False')
     writer.decrease_indent()
 
-def print_is_db_data_valid(writer, grapple_type):
+def print_is_input_data_valid(writer, grapple_type):
     writer.line('@staticmethod')
     writer.line('# This method checks to see that data coming out of the database is valid')
-    writer.line('def is_db_data_valid(data):')
-    writer.increase_indent() # begin is_db_data_valid implementation
+    writer.line('def is_input_data_valid(data):')
+    writer.increase_indent() # begin is_input_data_valid implementation
     print_if_return_false(writer, 'if not isinstance(data, dict):')
     # print_required_data_check(writer, 'id', 'UUID', 'ID')
     for field in grapple_type.fields():
@@ -191,7 +191,7 @@ def print_is_db_data_valid(writer, grapple_type):
             print_required_data_check(writer, field)
 
     writer.line('return True')
-    writer.decrease_indent() # end is_db_data_valid implementation
+    writer.decrease_indent() # end is_input_data_valid implementation
     writer.blank_line()
 
 def print_required_data_check(writer, field):

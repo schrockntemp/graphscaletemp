@@ -168,12 +168,12 @@ async def test_gen_item_list_three_members(test_cxt):
     assert new_todos[2].text() == 'text3'
 
 def test_data_valid_check():
-    assert TodoUser.is_db_data_valid({'id': uuid4(), 'name': 'something'})
-    assert not TodoUser.is_db_data_valid(None)
-    assert not TodoUser.is_db_data_valid('str')
-    assert not TodoUser.is_db_data_valid({'id': None, 'name': 'something'})
-    assert not TodoUser.is_db_data_valid({'id': 2343, 'name': 'something'})
-    assert not TodoUser.is_db_data_valid({'name': 'something'})
-    assert not TodoUser.is_db_data_valid({'id': 2343})
-    assert not TodoUser.is_db_data_valid({'id': 2343, 'name': None})
-    assert not TodoUser.is_db_data_valid({'id': 2343, 'name': 39483948})
+    assert TodoUser.is_input_data_valid({'id': uuid4(), 'name': 'something'})
+    assert not TodoUser.is_input_data_valid(None)
+    assert not TodoUser.is_input_data_valid('str')
+    assert not TodoUser.is_input_data_valid({'id': None, 'name': 'something'})
+    assert not TodoUser.is_input_data_valid({'id': 2343, 'name': 'something'})
+    assert not TodoUser.is_input_data_valid({'name': 'something'})
+    assert not TodoUser.is_input_data_valid({'id': 2343})
+    assert not TodoUser.is_input_data_valid({'id': 2343, 'name': None})
+    assert not TodoUser.is_input_data_valid({'id': 2343, 'name': 39483948})

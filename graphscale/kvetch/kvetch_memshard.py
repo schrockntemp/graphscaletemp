@@ -93,21 +93,20 @@ class KvetchMemShard(KvetchShard):
         sorted(self._all_edges[edge_name][from_id], key=lambda edge: edge['to_id'])
 
     def get_after_index(self, edges, after):
-        count = 0
+        index = 0
         for edge in edges:
             if after < edge['to_id']:
-                return count
-            count += 1
-        return count
+                return index
+            index += 1
+        return index
 
     async def gen_edges(self, edge_definition, from_id, after=None, first=None):
         param_check(from_id, UUID, 'from_id')
         edges = self._all_edges[edge_definition.edge_name()].get(from_id, [])
 
         if after:
-            count = self.get_after_index(edges, after) 
-            edges = edges[count:]
-
+            index = self.get_after_index(edges, after)
+            edges = edges[index:]
         if first:
             edges = edges[0:first]
 

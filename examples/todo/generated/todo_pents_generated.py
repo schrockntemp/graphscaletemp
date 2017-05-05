@@ -6,7 +6,7 @@ from graphscale.grapple.grapple_utils import req_data_elem_invalid, req_data_ele
 class TodoUserGenerated(Pent):
     @staticmethod
     # This method checks to see that data coming out of the database is valid
-    def is_db_data_valid(data):
+    def is_input_data_valid(data):
         if not isinstance(data, dict):
             return False
         if req_data_elem_invalid(data, 'id', UUID): # id: ID!
@@ -25,7 +25,7 @@ class TodoUserGenerated(Pent):
 class TodoItemGenerated(Pent):
     @staticmethod
     # This method checks to see that data coming out of the database is valid
-    def is_db_data_valid(data):
+    def is_input_data_valid(data):
         if not isinstance(data, dict):
             return False
         if not req_data_elem_valid(data, 'id', UUID): # id: ID!

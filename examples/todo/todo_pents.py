@@ -49,3 +49,18 @@ def get_edge_config():
 
 def get_todo_config():
     return PentConfig(object_config=get_object_config(), edge_config=get_edge_config())
+
+"""
+source
+edge visibility policy
+backing store
+available filters
+target pents
+
+
+source: id
+visibility: none
+backing store: kvetch_edge('user_to_todo_edge')
+available parameters: after, first
+target pents: TodoItem
+"""

@@ -8,7 +8,7 @@ def reverse_dict(dict_to_reverse):
     return {v: k for k, v in dict_to_reverse.items()}
 
 def safe_create(context, id_, klass, data):
-    if not klass.is_db_data_valid(data):
+    if not klass.is_input_data_valid(data):
         return None
     return klass(context, id_, data)
 
@@ -61,7 +61,7 @@ class Pent:
         return self._context.kvetch()
 
     def config(self):
-        return self._context.config() 
+        return self._context.config()
 
     @classmethod
     async def gen(cls, context, id_):

@@ -19,7 +19,7 @@ def test_ignore_type():
 
     @staticmethod
     # This method checks to see that data coming out of the database is valid
-    def is_db_data_valid(data):
+    def is_input_data_valid(data):
         if not isinstance(data, dict):
             return False
         if opt_data_elem_invalid(data, 'bar', FooBar): # bar: FooBar
@@ -40,7 +40,7 @@ def test_required_object_field():
 
     @staticmethod
     # This method checks to see that data coming out of the database is valid
-    def is_db_data_valid(data):
+    def is_input_data_valid(data):
         if not isinstance(data, dict):
             return False
         if req_data_elem_invalid(data, 'bar', FooBar): # bar: FooBar!
@@ -61,7 +61,7 @@ def test_object_field():
 
     @staticmethod
     # This method checks to see that data coming out of the database is valid
-    def is_db_data_valid(data):
+    def is_input_data_valid(data):
         if not isinstance(data, dict):
             return False
         if opt_data_elem_invalid(data, 'bar', FooBar): # bar: FooBar
@@ -85,7 +85,7 @@ def test_required_field():
 
     @staticmethod
     # This method checks to see that data coming out of the database is valid
-    def is_db_data_valid(data):
+    def is_input_data_valid(data):
         if not isinstance(data, dict):
             return False
         if req_data_elem_invalid(data, 'id', UUID): # id: ID!
@@ -119,7 +119,7 @@ def test_single_nullable_field():
 
     @staticmethod
     # This method checks to see that data coming out of the database is valid
-    def is_db_data_valid(data):
+    def is_input_data_valid(data):
         if not isinstance(data, dict):
             return False
         if opt_data_elem_invalid(data, 'name', str): # name: String
