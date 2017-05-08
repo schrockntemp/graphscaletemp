@@ -6,7 +6,8 @@ from graphscale.utils import param_check
 from .generated.todo_pents_generated import TodoUserGenerated, TodoItemGenerated
 
 class TodoUser(TodoUserGenerated):
-    pass
+    def capitalized_name(self):
+        return self.name().upper()
 
 class TodoUserInput:
     def __init__(self, *, name):

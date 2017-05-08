@@ -70,9 +70,13 @@ class GraphQLTodoUser(GrappleType):
     def create_type():
         return GraphQLObjectType(
             name='TodoUser',
-            fields={
+            fields=lambda: {
                 'id': id_field(),
                 'name': GraphQLField(type=GraphQLString),
+                'capitalizedName': GraphQLField(
+                    type=GraphQLString,
+                    resolver=lambda obj, args, *_: obj.capitalized_name(*args),
+                ),
                 'todoItems': GraphQLField(
                     type=req(list_of(req(GraphQLTodoItem.type()))),
                     args={
@@ -89,7 +93,7 @@ class GraphQLTodoItem(GrappleType):
     def create_type():
         return GraphQLObjectType(
             name='TodoItem',
-            fields={
+            fields=lambda: {
                 'text': GraphQLField(type=GraphQLString),
             },
         )
@@ -99,7 +103,7 @@ class GraphQLTodoUserInput(GrappleType):
     def create_type():
         return GraphQLInputObjectType(
             name='TodoUserInput',
-            fields={
+            fields=lambda: {
                 'name': GraphQLInputObjectField(type=req(GraphQLString)),
             },
         )
@@ -108,14 +112,14 @@ def create_todo_schema():
     return GraphQLSchema(
         query=GraphQLObjectType(
             name='Query',
-            fields={
+            fields=lambda: {
                 'user': define_top_level_getter(GraphQLTodoUser.type(), TodoUser),
                 'todoItem': define_top_level_getter(GraphQLTodoItem.type(), TodoItem),
             },
         ),
         mutation=GraphQLObjectType(
             name='Mutation',
-            fields={
+            fields=lambda: {
                 'createUser': GraphQLField(
                     type=GraphQLTodoUser.type(),
                     args={

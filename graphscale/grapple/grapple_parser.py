@@ -37,7 +37,7 @@ def print_graphql_object_type(writer, grapple_type):
     writer.line('return GraphQLObjectType(')
     writer.increase_indent() # begin GraphQLObjectType .ctor args
     writer.line("name='%s'," % grapple_type.name())
-    writer.line('fields={')
+    writer.line('fields=lambda: {')
     writer.increase_indent() # begin field declarations
     for field in grapple_type.fields():
         print_graphql_field(writer, field)
@@ -83,10 +83,25 @@ def graphql_type_string(type_ref):
         return graphql_type + '!'
 
 def print_graphql_field(writer, grapple_field):
-    if not grapple_field.is_bare_field():
-        raise Exception('complicated fields not supported yet.')
     type_ref_str = type_ref_string(grapple_field.type_ref())
-    writer.line("'%s': GraphQLField(type=%s)," % (grapple_field.name(), type_ref_str))
+    if grapple_field.is_bare_field():
+        writer.line("'%s': GraphQLField(type=%s)," % (grapple_field.name(), type_ref_str))
+        return
+
+    writer.line("'%s': GraphQLField(" % grapple_field.name())
+    writer.increase_indent() # begin args to GraphQLField .ctor
+    writer.line('type=%s,' % type_ref_str)
+    writer.line('args={')
+    writer.increase_indent() # begin entries in args dictionary
+
+    for grapple_arg in grapple_field.args():
+        arg_type_ref_str = type_ref_string(grapple_arg.type_ref())
+        writer.line("'%s': GraphQLArgument(type=%s)," % (grapple_arg.name(), arg_type_ref_str))
+
+    writer.decrease_indent() # end entries in args dictionary
+    writer.line('},') # close args dictionary
+    writer.decrease_indent() # end args to GraphQLField .ctor
+    writer.line('),') # close GraphQLField .ctor
 
 def graphql_type_to_python_type(graphql_type):
     scalars = {
@@ -128,12 +143,13 @@ class GrappleTypeDefinition:
         return self._generate_pent
 
 class GrappleField:
-    def __init__(self, *, name, grapple_type_ref):
+    def __init__(self, *, name, grapple_type_ref, args):
         self._name = name
         self._grapple_type_ref = grapple_type_ref
+        self._args = args
 
     def is_bare_field(self):
-        return True
+        return len(self._args) == 0
 
     def name(self):
         return self._name
@@ -145,6 +161,9 @@ class GrappleField:
 
     def type_ref(self):
         return self._grapple_type_ref
+
+    def args(self):
+        return self._args
 
 def filter_nodes(nodes, ast_cls):
     return filter(lambda node: isinstance(node, ast_cls), nodes)
@@ -172,10 +191,30 @@ def is_builtin_name(name):
     builtins = set(['id'])
     return name in builtins
 
+class GrappleFieldArgument:
+    def __init__(self, *, name, type_ref):
+        self._name = name
+        self._type_ref = type_ref
+
+    def name(self):
+        return self._name
+
+    def type_ref(self):
+        return self._type_ref
+
+def create_grapple_field_arg(graphql_arg):
+    if graphql_arg.default_value:
+        raise Exception('default_value not supported right now')
+    return GrappleFieldArgument(
+        name=graphql_arg.name.value,
+        type_ref=create_grapple_type_ref(graphql_arg.type),
+    )
+
 def create_grapple_field(graphql_field):
     return GrappleField(
         name=graphql_field.name.value,
         grapple_type_ref=create_grapple_type_ref(graphql_field.type),
+        args=[create_grapple_field_arg(graphql_arg) for graphql_arg in graphql_field.arguments]
     )
 
 class GrappleTypeRef:

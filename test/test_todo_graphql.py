@@ -116,6 +116,16 @@ def test_get_user():
     result = get_user_name_via_graphql(pent_context, new_id)
     assert result.data['user']['name'] == 'John Doe'
 
+def test_get_computed_field():
+    pent_context = mem_context()
+    user_input = TodoUserInput(name='John Doe')
+    user = execute_coro(create_todo_user(pent_context, user_input))
+    assert user.name() == 'John Doe'
+    new_id = user.id_()
+    query = '{ user (id: "%s") { capitalizedName } }' % new_id
+    result = execute_todo_query(query, pent_context)
+    assert result.data['user']['capitalizedName'] == 'JOHN DOE'
+
 def test_create_user():
     pent_context = mem_context()
     mutation_result = create_user_via_graphql(pent_context, 'John Doe')
