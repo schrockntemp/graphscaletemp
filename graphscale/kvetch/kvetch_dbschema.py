@@ -40,8 +40,8 @@ def create_kvetch_edge_table_sql():
     created DATETIME NOT NULL,
     updated DATETIME NOT NULL,
     body MEDIUMBLOB,
-    KEY(edge_id, from_id, to_id),
-    KEY(edge_id, from_id, row_id),
+    UNIQUE KEY(edge_id, from_id, to_id),
+    UNIQUE KEY(edge_id, from_id, row_id),
     KEY(updated)
 ) ENGINE=InnoDB;
 """
