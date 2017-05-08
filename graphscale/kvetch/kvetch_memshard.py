@@ -108,30 +108,28 @@ class KvetchMemShard(KvetchShard):
         if edge_name not in self._all_edges:
             self._all_edges[edge_name] = {}
 
+        now = datetime.now()
         edge_entry = {
             'edge_id': edge_definition.edge_id(),
             'from_id': from_id,
             'to_id': to_id,
             'data': data,
-            'created': datetime.now(),
-            'updated': datetime.now(),
+            'created': now,
+            'updated': now,
         }
         safe_append_to_dict_of_list(self._all_edges[edge_name], from_id, edge_entry)
-
-        self._all_edges[edge_name][from_id] = sorted(self._all_edges[edge_name][from_id], key=lambda edge: edge['created'])
 
     def get_after_index(self, edges, after):
         index = 0
         for edge in edges:
-            if after < edge['to_id']:
-                return index
+            if after == edge['to_id']:
+                return index + 1
             index += 1
         return index
 
     async def gen_edges(self, edge_definition, from_id, after=None, first=None):
         param_check(from_id, UUID, 'from_id')
         edges = self._all_edges[edge_definition.edge_name()].get(from_id, [])
-
 
         if after:
             index = self.get_after_index(edges, after)

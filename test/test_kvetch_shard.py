@@ -73,13 +73,13 @@ def only_shard():
 
 @pytest.fixture
 def test_shard_single_edge():
-    # return mem_single_edge_shard()
-    return db_single_edge_shard()
+    return mem_single_edge_shard()
+    # return db_single_edge_shard()
 
 @pytest.fixture
 def test_shard_single_index():
-    return mem_edge_and_index_shard()
-    # return db_edge_and_index_shard()
+    # return mem_edge_and_index_shard()
+    return db_edge_and_index_shard()
 
 def mem_edge_and_index_shard():
     related_edge = KvetchMemEdgeDefinition(
@@ -230,10 +230,10 @@ def test_id_edge(test_shard_single_edge):
 @pytest.mark.ignore
 def test_first_edge(test_shard_single_edge):
     shard, edges, _ = test_shard_single_edge
-    id_one = UUID('2b17b4d6-ad4f-4549-ab99-dece5451be6a')
-    id_two = UUID('2fb72eaa-bfba-4899-935d-52c54e05f16e')
-    id_three = UUID('49b9c3d2-7c61-4890-aed7-3a194e255413')
-    id_four = UUID('87cab1b5-2275-4526-8824-21384d6fde54')
+    id_one = uuid4()
+    id_two = UUID('54c4c971-e7a3-42ff-858a-64a73cca3286')
+    id_three = UUID('0ddf55de-0f37-4152-8f41-7e64c7359a9e')
+    id_four = UUID('e5a34f23-c14f-49cc-a9ad-f3a8165e141c')
 
     sync_kv_insert_object(shard, id_one, 1000, {})
     sync_kv_insert_object(shard, id_two, 1000, {})
@@ -261,13 +261,14 @@ def test_first_edge(test_shard_single_edge):
     assert not id_three in get_after(id_three)
     assert id_four in get_after(id_three)
 
-    assert len(get_after(id_four)) == 0
+    after_four_len = len(get_after(id_four))
+    assert after_four_len == 0
 
 def test_after_edge(test_shard_single_edge):
     shard, edges, _ = test_shard_single_edge
-    id_one = UUID('2b17b4d6-ad4f-4549-ab99-dece5451be6a')
-    id_two = UUID('2fb72eaa-bfba-4899-935d-52c54e05f16e')
-    id_three = UUID('49b9c3d2-7c61-4890-aed7-3a194e255413')
+    id_one = uuid4()
+    id_two = uuid4()
+    id_three = uuid4()
     data_one = {'num': 4}
     data_two = {'num': 5, 'related_id': id_one}
     data_three = {'num': 6, 'related_id': id_one}
