@@ -26,7 +26,7 @@ def create_kvetch_index_table_sql(index_column, index_sql_type, target_column, i
     created DATETIME NOT NULL,
     KEY (%s, %s),
     KEY (%s, %s),
-    KEY (updated)
+    KEY (created)
 ) ENGINE=InnoDB;
 """ % (index_name, index_column, index_sql_type, target_column,
        index_column, target_column, target_column, index_column)

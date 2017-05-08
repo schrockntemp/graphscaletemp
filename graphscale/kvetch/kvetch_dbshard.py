@@ -183,7 +183,7 @@ def _kv_shard_insert_index_entry(
         target_column,
         target_id):
 
-    sql = 'INSERT INTO %s (%s, %s, updated)' % (index_name, index_column, target_column)
+    sql = 'INSERT INTO %s (%s, %s, created)' % (index_name, index_column, target_column)
     sql += ' VALUES(%s, %s, %s)'
     values = [index_value, target_id, datetime.now()]
     with shard_conn.cursor() as cursor:

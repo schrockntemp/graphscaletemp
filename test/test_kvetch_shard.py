@@ -78,8 +78,8 @@ def test_shard_single_edge():
 
 @pytest.fixture
 def test_shard_single_index():
-    # return mem_edge_and_index_shard()
-    return db_edge_and_index_shard()
+    return mem_edge_and_index_shard()
+    # return db_edge_and_index_shard()
 
 def mem_edge_and_index_shard():
     related_edge = KvetchMemEdgeDefinition(
@@ -230,7 +230,7 @@ def test_id_edge(test_shard_single_edge):
 @pytest.mark.ignore
 def test_first_edge(test_shard_single_edge):
     shard, edges, _ = test_shard_single_edge
-    id_one = uuid4()
+    id_one = UUID('f2d41433-a996-40c9-ba3b-6047b2bd27f7')
     id_two = UUID('54c4c971-e7a3-42ff-858a-64a73cca3286')
     id_three = UUID('0ddf55de-0f37-4152-8f41-7e64c7359a9e')
     id_four = UUID('e5a34f23-c14f-49cc-a9ad-f3a8165e141c')
@@ -266,9 +266,9 @@ def test_first_edge(test_shard_single_edge):
 
 def test_after_edge(test_shard_single_edge):
     shard, edges, _ = test_shard_single_edge
-    id_one = uuid4()
-    id_two = uuid4()
-    id_three = uuid4()
+    id_one = UUID('50ce64f1-3e76-462c-8a03-91475503e496')
+    id_two = UUID('a5c99e91-8084-4405-8378-db0af38d8b61')
+    id_three = UUID('5301d18f-c3bd-42c4-bcfb-50924b3aca39')
     data_one = {'num': 4}
     data_two = {'num': 5, 'related_id': id_one}
     data_three = {'num': 6, 'related_id': id_one}
