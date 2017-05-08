@@ -39,8 +39,8 @@ class GrappleType:
 
 def get_pent_genner(klass):
     async def genner(_parent, args, context, *_):
-        id_ = UUID(args['id'])
-        return await klass.gen(context, id_)
+        obj_id = UUID(args['id'])
+        return await klass.gen(context, obj_id)
     return genner
 
 def define_top_level_getter(graphql_type, pent_type):
@@ -56,7 +56,7 @@ async def gen_todo_items(user, args, _context, *_):
 def id_field():
     return GraphQLField(
         type=GraphQLNonNull(type=GraphQLID),
-        resolver=lambda obj, *_: obj.id_(),
+        resolver=lambda obj, *_: obj.obj_id(),
     )
 
 def req(ttype):

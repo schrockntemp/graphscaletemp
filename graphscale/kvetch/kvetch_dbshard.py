@@ -5,16 +5,104 @@ from uuid import UUID
 
 from pymysql.connections import Connection
 
-from graphscale.utils import (
-    execute_coro,
-    param_check,
-)
+from graphscale.utils import param_check
 
 from graphscale.kvetch.kvetch import (
     KvetchShard,
     KvetchIndexDefinition,
     KvetchEdgeDefinition,
 )
+
+
+
+class KvetchDbSingleConnectionPool:
+    def __init__(self, conn):
+        param_check(conn, Connection, 'conn')
+        self._conn = conn
+
+    def conn(self):
+        return self._conn
+
+
+class KvetchDbEdgeDefinition(KvetchEdgeDefinition):
+    pass
+
+class KvetchDbIndexDefinition(KvetchIndexDefinition):
+    def __init__(self, *, indexed_attr, indexed_sql_type, index_name):
+        param_check(indexed_attr, str, 'indexed_attr')
+        param_check(indexed_sql_type, str, 'indexed_sql_type')
+        param_check(index_name, str, 'index_name')
+
+        self._indexed_attr = indexed_attr
+        self._indexed_sql_type = indexed_sql_type
+        self._index_name = index_name
+
+    def index_name(self):
+        return self._index_name
+
+    def indexed_attr(self):
+        return self._indexed_attr
+
+    def indexed_sql_type(self):
+        return self._indexed_sql_type
+
+class KvetchDbShard(KvetchShard):
+    def __init__(self, *, pool):
+        self._pool = pool
+
+    def conn(self):
+        return self._pool.conn()
+
+    async def gen_object(self, obj_id):
+        param_check(obj_id, UUID, 'obj_id')
+        return _kv_shard_get_object(self.conn(), obj_id)
+
+    async def gen_objects(self, ids):
+        param_check(ids, list, 'ids')
+        if not ids:
+            raise ValueError('ids must have at least 1 element')
+        return _kv_shard_get_objects(self.conn(), ids)
+
+    async def gen_insert_index_entry(self, index, index_value, target_id):
+        attr = index.indexed_attr()
+        _kv_shard_insert_index_entry(
+            shard_conn=self.conn(),
+            index_name=index.index_name(),
+            index_column=attr,
+            index_value=index_value,
+            target_column='target_id',
+            target_id=target_id,
+        )
+
+    async def gen_insert_edge(self, edge_definition, from_id, to_id, data=None):
+        param_check(from_id, UUID, 'from_id')
+        param_check(to_id, UUID, 'to_id')
+        if data is None:
+            data = {}
+        param_check(data, dict, 'data')
+        _kv_shard_insert_edge(self.conn(), edge_definition.edge_id(), from_id, to_id, data)
+
+    async def gen_insert_object(self, new_id, type_id, data):
+        self.check_insert_object_vars(new_id, type_id, data)
+        _kv_shard_insert_object(self.conn(), new_id, type_id, data)
+        return new_id
+
+    async def gen_edges(self, edge_definition, from_id):
+        param_check(from_id, UUID, 'from_id')
+        return _kv_shard_get_edges(self.conn(), edge_definition.edge_id(), from_id)
+
+    async def gen_edge_ids(self, edge_definition, from_id):
+        edges = await self.gen_edges(edge_definition, from_id)
+        return [edge['to_id'] for edge in edges]
+
+    async def gen_index_entries(self, index, value):
+        return _kv_shard_get_index_entries(
+            shard_conn=self.conn(),
+            index_name=index.index_name(),
+            index_column=index.indexed_attr(),
+            index_value=value,
+            target_column='target_id',
+        )
 
 def data_to_body(data):
     return zlib.compress(pickle.dumps(data))
@@ -29,15 +117,15 @@ def row_to_obj(row):
     body_dict = body_to_data(row['body'])
     return {**id_dict, **body_dict}
 
-def _kv_shard_get_object(shard_conn, id_):
-    obj_dict = _kv_shard_get_objects(shard_conn, [id_])
-    return obj_dict[id_]
+def _kv_shard_get_object(shard_conn, obj_id):
+    obj_dict = _kv_shard_get_objects(shard_conn, [obj_id])
+    return obj_dict[obj_id]
 
 def _kv_shard_get_objects(shard_conn, ids):
     values_sql = ', '.join(['%s' for x in range(0, len(ids))])
     sql = 'SELECT id, type_id, body from kvetch_objects where id in (' + values_sql + ')'
     with shard_conn.cursor() as cursor:
-        cursor.execute(sql, [id_.bytes for id_ in ids])
+        cursor.execute(sql, [obj_id.bytes for obj_id in ids])
         rows = cursor.fetchall()
 
     ids_out = [UUID(bytes=row['id']) for row in rows]
@@ -147,16 +235,12 @@ class KvetchDbShard(KvetchShard):
     def __init__(self, *, pool):
         self._pool = pool
 
-    @staticmethod
-    def fromconn(conn):
-        return KvetchDbShard(pool=KvetchDbSingleConnectionPool(conn))
-
     def conn(self):
         return self._pool.conn()
 
-    async def gen_object(self, id_):
-        param_check(id_, UUID, 'id_')
-        return _kv_shard_get_object(self.conn(), id_)
+    async def gen_object(self, obj_id):
+        param_check(obj_id, UUID, 'obj_id')
+        return _kv_shard_get_object(self.conn(), obj_id)
 
     async def gen_objects(self, ids):
         param_check(ids, list, 'ids')

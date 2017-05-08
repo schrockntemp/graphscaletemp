@@ -7,9 +7,9 @@ def param_check(obj, ttype, param):
         raise ValueError('Param %s is not a %s. It is a %s. Value: %s'
                          % (param, ttype.__name__, type(param).__name__, str(obj)))
 
-def execute_coro(coro):
+def execute_gen(gen):
     loop = asyncio.new_event_loop()
-    result = loop.run_until_complete(coro)
+    result = loop.run_until_complete(gen)
     loop.close()
     return result
 

@@ -100,19 +100,19 @@ class Kvetch:
 
         return new_id
 
-    async def gen_object(self, id_):
-        param_check(id_, UUID, 'id_')
-        shard = self.get_shard_from_obj_id(id_)
-        return await shard.gen_object(id_)
+    async def gen_object(self, obj_id):
+        param_check(obj_id, UUID, 'obj_id')
+        shard = self.get_shard_from_obj_id(obj_id)
+        return await shard.gen_object(obj_id)
 
     async def gen_objects(self, ids):
         # construct dictionary of shard_id to all ids in that shard
         shard_to_ids = {} # shard_id => [id]
-        for id_ in ids:
-            shard_id = self.get_shard_id_from_obj_id(id_)
+        for obj_id in ids:
+            shard_id = self.get_shard_id_from_obj_id(obj_id)
             if not shard_id in shard_to_ids:
                 shard_to_ids[shard_id] = []
-            shard_to_ids[shard_id].append(id_)
+            shard_to_ids[shard_id].append(obj_id)
 
         # construct list of coros (one per shard) in order to fetch in parallel
         unawaited_gens = []
@@ -125,8 +125,8 @@ class Kvetch:
         # flatten results into single dict
         results = {}
         for obj_dict in obj_dict_per_shard:
-            for id_, obj in obj_dict.items():
-                results[id_] = obj
+            for obj_id, obj in obj_dict.items():
+                results[obj_id] = obj
         return results
 
     async def gen_edges(self, edge_definition, from_id, after=None, first=None):

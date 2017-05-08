@@ -57,7 +57,7 @@ from graphscale.pent.pent import (
     Pent
 )
 
-from graphscale.utils import execute_coro, param_check
+from graphscale.utils import execute_gen, param_check
 
 from graphql.execution.executors.asyncio import AsyncioExecutor
 
@@ -110,18 +110,18 @@ def create_user_via_graphql(pent_context, name):
 def test_get_user():
     pent_context = mem_context()
     user_input = TodoUserInput(name='John Doe')
-    user = execute_coro(create_todo_user(pent_context, user_input))
+    user = execute_gen(create_todo_user(pent_context, user_input))
     assert user.name() == 'John Doe'
-    new_id = user.id_()
+    new_id = user.obj_id()
     result = get_user_name_via_graphql(pent_context, new_id)
     assert result.data['user']['name'] == 'John Doe'
 
 def test_get_computed_field():
     pent_context = mem_context()
     user_input = TodoUserInput(name='John Doe')
-    user = execute_coro(create_todo_user(pent_context, user_input))
+    user = execute_gen(create_todo_user(pent_context, user_input))
     assert user.name() == 'John Doe'
-    new_id = user.id_()
+    new_id = user.obj_id()
     query = '{ user (id: "%s") { capitalizedName } }' % new_id
     result = execute_todo_query(query, pent_context)
     assert result.data['user']['capitalizedName'] == 'JOHN DOE'
@@ -174,34 +174,34 @@ def test_create_delete_user():
 def test_get_item():
     pent_context = mem_context()
     user_input = TodoUserInput(name='John Doe')
-    user = execute_coro(create_todo_user(pent_context, user_input))
-    todo_input_one = TodoItemInput(user_id=user.id_(), text='something one')
-    todo_one = execute_coro(create_todo_item(pent_context, todo_input_one))
+    user = execute_gen(create_todo_user(pent_context, user_input))
+    todo_input_one = TodoItemInput(user_id=user.obj_id(), text='something one')
+    todo_one = execute_gen(create_todo_item(pent_context, todo_input_one))
     assert todo_one.text() == 'something one'
 
-    todo_input_two = TodoItemInput(user_id=user.id_(), text='something two')
-    todo_two = execute_coro(create_todo_item(pent_context, todo_input_two))
+    todo_input_two = TodoItemInput(user_id=user.obj_id(), text='something two')
+    todo_two = execute_gen(create_todo_item(pent_context, todo_input_two))
     assert todo_two.text() == 'something two'
 
-    todo_user_out = execute_coro(todo_one.gen_user())
+    todo_user_out = execute_gen(todo_one.gen_user())
     assert todo_user_out.name() == 'John Doe'
 
-    query = '{ todoItem(id: "%s") { text } }' % todo_one.id_()
+    query = '{ todoItem(id: "%s") { text } }' % todo_one.obj_id()
     result = execute_todo_query(query, pent_context)
     assert result.data['todoItem']['text'] == 'something one'
 
-    query = '{ user (id: "%s") { todoItems { text } } }' % user.id_()
+    query = '{ user (id: "%s") { todoItems { text } } }' % user.obj_id()
     result = execute_todo_query(query, pent_context)
 
     assert len(result.data['user']['todoItems']) == 2
     assert result.data['user']['todoItems'][0]['text'] == 'something one'
     assert result.data['user']['todoItems'][1]['text'] == 'something two'
 
-    first_one_todo_items = execute_coro(user.gen_todo_items(first=1))
+    first_one_todo_items = execute_gen(user.gen_todo_items(first=1))
     assert len(first_one_todo_items) == 1
     assert first_one_todo_items[0].text() == 'something one'
 
-    query = '{ user (id: "%s") { todoItems(first: 1) { text } } }' % user.id_()
+    query = '{ user (id: "%s") { todoItems(first: 1) { text } } }' % user.obj_id()
     result = execute_todo_query(query, pent_context)
     assert result.data['user']['todoItems'][0]['text'] == 'something one'
 

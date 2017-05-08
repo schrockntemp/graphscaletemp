@@ -38,15 +38,15 @@ class KvetchMemShard(KvetchShard):
         self._all_indexes = {}
         self._all_edges = {}
 
-    async def gen_object(self, id_):
-        param_check(id_, UUID, 'id_')
-        return self._objects.get(id_)
+    async def gen_object(self, obj_id):
+        param_check(obj_id, UUID, 'obj_id')
+        return self._objects.get(obj_id)
 
     async def gen_objects(self, ids):
         param_check(ids, list, 'ids')
         if not ids:
             raise ValueError('ids must have at least 1 element')
-        return {id_: self._objects.get(id_) for id_ in ids}
+        return {obj_id: self._objects.get(obj_id) for obj_id in ids}
 
     async def gen_insert_index_entry(self, index, index_value, target_id):
         index_name = index.index_name()

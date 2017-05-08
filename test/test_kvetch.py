@@ -136,17 +136,17 @@ async def test_many_objects_many_shards():
         id_to_num[new_id] = i
 
     count = 0
-    for id_ in ids:
-        obj = await kvetch.gen_object(id_)
-        assert obj['id'] == id_
+    for obj_id in ids:
+        obj = await kvetch.gen_object(obj_id)
+        assert obj['id'] == obj_id
         assert obj['num'] == count
         assert obj['__type_id'] == 234
         count += 1
 
     objs = await kvetch.gen_objects(ids)
-    for id_, obj in objs.items():
-        assert obj['id'] == id_
-        assert id_to_num[id_] == obj['num']
+    for obj_id, obj in objs.items():
+        assert obj['id'] == obj_id
+        assert id_to_num[obj_id] == obj['num']
 
 @pytest.mark.asyncio
 async def test_single_edge_kvetch(single_edge_kvetch):
