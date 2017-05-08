@@ -5,6 +5,7 @@ def create_kvetch_objects_table_sql():
     row_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     id BINARY(16) NOT NULL,
     type_id INT NOT NULL,
+    created TIMESTAMP NOT NULL,
     updated TIMESTAMP NOT NULL,
     body MEDIUMBLOB,
     UNIQUE KEY (id),
@@ -22,7 +23,7 @@ def create_kvetch_index_table_sql(index_column, index_sql_type, target_column, i
     row_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     %s %s NOT NULL,
     %s BINARY(16) NOT NULL,
-    updated TIMESTAMP NOT NULL,
+    created TIMESTAMP NOT NULL,
     KEY (%s, %s),
     KEY (%s, %s),
     KEY (updated)
@@ -36,9 +37,10 @@ def create_kvetch_edge_table_sql():
     edge_id INT NOT NULL,
     from_id BINARY(16) NOT NULL,
     to_id BINARY(16) NOT NULL,
+    created TIMESTAMP NOT NULL,
     updated TIMESTAMP NOT NULL,
     body MEDIUMBLOB,
-    UNIQUE KEY(edge_id, from_id, to_id),
+    UNIQUE KEY(edge_id, from_id, created),
     KEY (updated)
 ) ENGINE=InnoDB;
 """

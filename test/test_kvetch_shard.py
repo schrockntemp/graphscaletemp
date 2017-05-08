@@ -17,6 +17,8 @@ from graphscale.kvetch.kvetch_dbshard import (
     sync_kv_get_index_ids,
     sync_kv_insert_edge,
     sync_kv_get_edge_ids,
+    sync_kv_update_object,
+    sync_kv_delete_object,
 )
 
 from graphscale.kvetch.kvetch_memshard import (
@@ -145,6 +147,23 @@ def test_objects_insert_get(only_shard):
     assert obj_dict[id_two]['id'] == id_two
     assert obj_dict[id_two]['num'] == 5
 
+def test_objects_insert_update_get(only_shard):
+    shard = only_shard
+    data_one = {'num': 4}
+    id_one = insert_test_obj(shard, data_one)
+    obj_t_one = sync_kv_get_object(shard, id_one)
+    assert obj_t_one['num'] == 4
+    sync_kv_update_object(shard, id_one, {'num': 5})
+    obj_t_two = sync_kv_get_object(shard, id_one)
+    assert obj_t_two['num'] == 5
+
+def test_delete_object(only_shard):
+    shard = only_shard
+    data_one = {'num': 4}
+    id_one = insert_test_obj(shard, data_one)
+    assert sync_kv_get_object(shard, id_one)['num'] == 4
+    sync_kv_delete_object(shard, id_one)
+    assert sync_kv_get_object(shard, id_one) is None
 
 def test_get_zero_objects(only_shard):
     with pytest.raises(ValueError):
@@ -248,11 +267,6 @@ def test_first_edge(test_shard_single_edge):
     assert not id_two in get_after(id_two, 1)
     assert id_three in get_after(id_two, 1)
     assert not id_four in get_after(id_two, 1)
-
-    # sync_kv_insert_edge(shard, related_edge, id_one, id_two)
-    # sync_kv_insert_edge(shard, related_edge, id_one, id_three)
-    # edge_ids = sync_kv_get_edge_ids(shard, related_edge, id_one, first=1)
-    # assert len(edge_ids) == 1
 
 def test_after_edge(test_shard_single_edge):
     shard, edges, _ = test_shard_single_edge

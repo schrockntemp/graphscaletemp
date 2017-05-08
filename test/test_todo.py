@@ -11,6 +11,7 @@ from examples.todo.todo_pents import (
     TodoUserInput,
     create_todo_item,
     create_todo_user,
+    update_todo_user,
     get_todo_config
 )
 
@@ -93,7 +94,15 @@ async def test_create_todo_user(test_cxt):
     new_user = await create_todo_user(test_cxt, TodoUserInput(name='Test Name'))
     assert new_user.name() == 'Test Name'
 
-
+@pytest.mark.asyncio
+async def test_create_update_user(test_cxt):
+    user_t_one = await create_todo_user(test_cxt, TodoUserInput(name='Test Name'))
+    new_id = user_t_one.id_()
+    assert user_t_one.name() == 'Test Name'
+    await update_todo_user(test_cxt, new_id, TodoUserInput(name='New Name'))
+    user_t_two = await TodoUser.gen(test_cxt, new_id)
+    assert user_t_two.name() == 'New Name'
+    
 @pytest.mark.asyncio
 async def test_gen_user(test_cxt):
     new_user = await create_todo_user(test_cxt, TodoUserInput(name='Test Name'))

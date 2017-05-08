@@ -3,7 +3,6 @@ from uuid import UUID
 from graphscale.kvetch.kvetch import Kvetch
 from graphscale.utils import param_check
 
-
 def reverse_dict(dict_to_reverse):
     return {v: k for k, v in dict_to_reverse.items()}
 
@@ -42,10 +41,21 @@ async def load_pents(context, ids):
     return pent_dict
 
 async def create_pent(context, klass, input_object):
+    param_check(context, PentContext, 'context')
     type_id = context.config().get_type_id(klass)
     data = input_object.data()
     new_id = await context.kvetch().gen_insert_object(type_id, data)
     return await klass.gen(context, new_id)
+
+async def update_pent(context, klass, obj_id, input_object):
+    param_check(context, PentContext, 'context')
+    data = input_object.data()
+    await context.kvetch().gen_update_object(obj_id, data)
+    return await klass.gen(context, obj_id)
+
+async def delete_pent(context, _klass, obj_id):
+    param_check(context, PentContext, 'context')
+    await context.kvetch().gen_delete_object(obj_id)
 
 class Pent:
     def __init__(self, context, id_, data):
@@ -89,19 +99,19 @@ class Pent:
         return self._data
 
     async def gen_edges_to(self, edge_name, after=None, first=None):
-        if after is not None or first is not None:
-            raise Exception('after, from not supported after: %s first: %s' % (after, first))
+        # if after is not None or first is not None:
+        #     raise Exception('after, from not supported after: %s first: %s' % (after, first))
 
         kvetch = self.kvetch()
 
         edge_definition = kvetch.get_edge_definition_by_name(edge_name)
-        edges = await kvetch.gen_edges(edge_definition, self.id_())
+        edges = await kvetch.gen_edges(edge_definition, self.id_(), after=after, first=first)
         return edges
 
     async def gen_associated_pents(self, klass, edge_name, after=None, first=None):
-        if after is not None or first is not None:
-            raise Exception('after, from not supported after: %s first: %s' % (after, first))
-        edges = await self.gen_edges_to(edge_name)
+        # if after is not None or first is not None:
+        #     raise Exception('after, from not supported after: %s first: %s' % (after, first))
+        edges = await self.gen_edges_to(edge_name, after=after, first=first)
         to_ids = [edge['to_id'] for edge in edges]
         return await klass.gen_list(self._context, to_ids)
 

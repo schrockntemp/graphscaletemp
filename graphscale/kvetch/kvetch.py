@@ -61,6 +61,18 @@ class Kvetch:
     def create_new_id(self): # seperate methdo in order to stub out in tests
         return uuid4()
 
+    async def gen_update_object(self, obj_id, data):
+        param_check(obj_id, UUID, 'obj_id')
+        param_check(data, dict, 'data')
+
+        shard = self.get_shard_from_obj_id(obj_id)
+        return await shard.gen_update_object(obj_id, data)
+
+    async def gen_delete_object(self, obj_id):
+        param_check(obj_id, UUID, 'obj_id')
+        shard = self.get_shard_from_obj_id(obj_id)
+        return await shard.gen_delete_object(obj_id)
+
     async def gen_insert_object(self, type_id, data):
         param_check(type_id, int, 'type_id')
         param_check(data, dict, 'data')
@@ -117,9 +129,9 @@ class Kvetch:
                 results[id_] = obj
         return results
 
-    async def gen_edges(self, edge_definition, from_id, _after=None, _first=None):
+    async def gen_edges(self, edge_definition, from_id, after=None, first=None):
         shard = self.get_shard_from_obj_id(from_id)
-        return await shard.gen_edges(edge_definition, from_id)
+        return await shard.gen_edges(edge_definition, from_id, after=after, first=first)
 
     async def gen_from_index(self, index, index_value):
         ids = []

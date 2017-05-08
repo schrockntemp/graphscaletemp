@@ -1,4 +1,5 @@
 import asyncio
+from uuid import UUID
 
 from graphql import (graphql)
 from examples.todo.todo_graphql import create_todo_schema
@@ -56,22 +57,26 @@ from graphscale.pent.pent import (
     Pent
 )
 
-from graphscale.utils import execute_coro
+from graphscale.utils import execute_coro, param_check
 
 from graphql.execution.executors.asyncio import AsyncioExecutor
 
 class TestContext:
     pass
 
-def execute_todo_query(query, context_value=None):
+def execute_todo_query(query, pent_context):
+    param_check(query, str, 'query')
+    param_check(pent_context, PentContext, 'pent_context')
+
     loop = asyncio.new_event_loop()
     result = graphql(
         create_todo_schema(),
         query,
         executor=AsyncioExecutor(loop=loop),
-        context_value=context_value
+        context_value=pent_context
     )
     if result.errors:
+        print(result.errors[0])
         raise Exception(str(result.errors))
     return result
 
@@ -85,15 +90,76 @@ def test_arg():
     result = graphql(create_fake_schema(), query)
     assert result.data['return_arg'] == 'hello'
 
+def get_user_name_via_graphql(pent_context, obj_id):
+    query = '{ user(id: "%s") { name } }' % obj_id
+    return execute_todo_query(query, pent_context)
+
+def create_user_via_graphql(pent_context, name):
+    mutation_query = """
+    mutation {
+        createUser(input: {
+            name: "%s"
+        }) {
+            id
+            name
+        }
+    }
+""" % name
+    return execute_todo_query(mutation_query, pent_context)
+
 def test_get_user():
     pent_context = mem_context()
     user_input = TodoUserInput(name='John Doe')
     user = execute_coro(create_todo_user(pent_context, user_input))
     assert user.name() == 'John Doe'
     new_id = user.id_()
-    query = '{ user(id: "%s") { name } }' % new_id
+    result = get_user_name_via_graphql(pent_context, new_id)
+    assert result.data['user']['name'] == 'John Doe'
+
+def test_create_user():
+    pent_context = mem_context()
+    mutation_result = create_user_via_graphql(pent_context, 'John Doe')
+    assert mutation_result.data['createUser']['name'] == 'John Doe'
+    new_id = UUID(mutation_result.data['createUser']['id'])
+    query = '{ user (id: "%s") { name } }' % new_id
     result = execute_todo_query(query, pent_context)
     assert result.data['user']['name'] == 'John Doe'
+
+def test_create_update_user():
+    pent_context = mem_context()
+    create_result = create_user_via_graphql(pent_context, 'John Doe')
+    assert create_result.data['createUser']['name'] == 'John Doe'
+    new_id = UUID(create_result.data['createUser']['id'])
+    get_result = get_user_name_via_graphql(pent_context, new_id)
+    assert get_result.data['user']['name'] == 'John Doe'
+
+    update_query = """
+    mutation { 
+        updateUser(id: "%s", input: { name: "%s" }) {
+            id
+            name
+        }
+    }
+""" % (new_id, 'Jane Doe')
+    update_result = execute_todo_query(update_query, pent_context)
+    assert update_result.data['updateUser']['name'] == 'Jane Doe'
+
+def test_create_delete_user():
+    pent_context = mem_context()
+    create_result = create_user_via_graphql(pent_context, 'John Doe')
+    assert create_result.data['createUser']['name'] == 'John Doe'
+    new_id = UUID(create_result.data['createUser']['id'])
+
+    delete_query = """
+    mutation {
+        deleteUser(id: "%s") {
+            id
+        }
+    }""" % new_id
+
+    execute_todo_query(delete_query, pent_context)
+    get_result = get_user_name_via_graphql(pent_context, new_id)
+    assert get_result.data['user'] is None
 
 def test_get_item():
     pent_context = mem_context()
@@ -117,9 +183,18 @@ def test_get_item():
     query = '{ user (id: "%s") { todoItems { text } } }' % user.id_()
     result = execute_todo_query(query, pent_context)
 
-    ## I don't understand why this doesn't fail half the time
+    assert len(result.data['user']['todoItems']) == 2
     assert result.data['user']['todoItems'][0]['text'] == 'something one'
     assert result.data['user']['todoItems'][1]['text'] == 'something two'
+
+    first_one_todo_items = execute_coro(user.gen_todo_items(first=1))
+    assert len(first_one_todo_items) == 1
+    assert first_one_todo_items[0].text() == 'something one'
+
+    query = '{ user (id: "%s") { todoItems(first: 1) { text } } }' % user.id_()
+    result = execute_todo_query(query, pent_context)
+    assert result.data['user']['todoItems'][0]['text'] == 'something one'
+
 
 def mem_context():
     edges = [KvetchMemEdgeDefinition(

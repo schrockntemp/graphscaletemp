@@ -75,22 +75,14 @@ def _kv_shard_insert_index_entry(
         cursor.execute(sql, tuple(_to_sql_value(v) for v in values))
     shard_conn.commit()
 
-def _kv_shard_insert_edge(
-        shard_conn,
-        edge_id,
-        from_id,
-        to_id,
-        data):
+def _kv_shard_insert_edge(shard_conn, edge_id, from_id, to_id, data):
     sql = 'INSERT into kvetch_edges (edge_id, from_id, to_id, body) VALUES(%s, %s, %s, %s)'
     values = (edge_id, from_id.bytes, to_id.bytes, data_to_body(data))
     with shard_conn.cursor() as cursor:
         cursor.execute(sql, values)
     shard_conn.commit()
 
-def _kv_shard_get_edges(
-        shard_conn,
-        edge_id,
-        from_id):
+def _kv_shard_get_edges(shard_conn, edge_id, from_id):
     sql = 'SELECT from_id, to_id, body FROM kvetch_edges WHERE from_id = %s'
     rows = []
     with shard_conn.cursor() as cursor:
@@ -128,6 +120,14 @@ class KvetchDbSingleConnectionPool:
     def conn(self):
         return self._conn
 
+def sync_kv_delete_object(shard, obj_id):
+    param_check(shard, KvetchShard, 'shard')
+    return execute_coro(shard.gen_delete_object(obj_id))
+
+def sync_kv_update_object(shard, obj_id, data):
+    param_check(shard, KvetchShard, 'shard')
+    return execute_coro(shard.gen_update_object(obj_id, data))
+
 def sync_kv_insert_object(shard, new_id, type_id, data):
     param_check(shard, KvetchShard, 'shard')
     return execute_coro(shard.gen_insert_object(new_id, type_id, data))
@@ -139,11 +139,6 @@ def sync_kv_get_object(shard, id_):
 def sync_kv_get_objects(shard, ids):
     param_check(shard, KvetchShard, 'shard')
     return execute_coro(shard.gen_objects(ids))
-
-# def sync_kv_index_get_all(shard, index, value):
-#     param_check(shard, KvetchShard, 'shard')
-#     param_check(index, KvetchShardIndex, 'index')
-#     return execute_coro(shard.gen_all(index, value))
 
 def sync_kv_insert_index_entry(shard, index_name, index_value, target_id):
     return execute_coro(shard.gen_insert_index_entry(index_name, index_value, target_id))
@@ -189,7 +184,7 @@ class KvetchDbShard(KvetchShard):
 
     @staticmethod
     def fromconn(conn):
-        return KvetchDbShard(pool=KvetchDbSingleConnectionPool(conn)) 
+        return KvetchDbShard(pool=KvetchDbSingleConnectionPool(conn))
 
     def conn(self):
         return self._pool.conn()

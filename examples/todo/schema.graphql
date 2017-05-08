@@ -1,15 +1,19 @@
 @generatepent
 type TodoUser {
-    id: ID!
+    id: ID! 
     name: String!
-    todos: [TodoItem]
+    todos(skip: Int, take: Int): [TodoItem!]! @grappleManyToOne(name: "user_to_todo")
+    todosCount: Int!
+    capitalizedName: String!  
 }
 
 @generatepent
 type TodoItem {
     id: ID!
-    user: TodoUser
     text: String!
+
+    @grappleOneToMany(name: "user_to_todo", to_id_attr: "user_id")
+    user: TodoUser 
 }
 
 @generateinput(pent: "TodoUser")
@@ -19,8 +23,8 @@ type TodoUserInput {
 
 @generateinput(pent: "TodoItem")
 type TodoItemInput {
-    user_id: ID!
     text: String!
+    userId: ID!
 }
 
 type Query {
@@ -29,12 +33,9 @@ type Query {
 }
 
 type Mutation {
-    @generateCreate(pent: "TodoUser")
-    createTestUser(input: TodoUserInput) : TestUser
+    createTodoUser(input: TodoUserInput!) : CreateTodoUserPayload @generateCreate @generatePayload 
 
-    @generateUpdate(pent: "TodoUser")
-    updateTestUser(id: ID!, input: TodoUserInput) : TestUser
+    updateTodoUser(id: ID!, input: TodoUserInput) : UpdateTodoUserPayload @generateUpdate @generatePayload
 
-    @generateDelete(pent: "TodoUser")
-    deleteTestUser(id: ID!)
+    deleteTodoUser(id: ID!) : DeleteTodoUserPayload @generateDelete @generatePayload
 }

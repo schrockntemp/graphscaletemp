@@ -62,6 +62,32 @@ class KvetchMemShard(KvetchShard):
         index_dict = self._all_indexes[index.index_name()]
         return index_dict[index_value]
 
+    async def gen_update_object(self, obj_id, data):
+        param_check(obj_id, UUID, 'obj_id')
+        param_check(data, dict, 'data')
+
+        if not obj_id in self._objects:
+            # raise exception?
+            raise Exception('id not found')
+
+        obj = self._objects[obj_id]
+
+        for key, val in data.items():
+            obj[key] = val
+
+        obj['updated'] = datetime.now()
+
+        self._objects[obj_id] = obj
+
+        return obj
+
+    async def gen_delete_object(self, obj_id):
+        param_check(obj_id, UUID, 'obj_id')
+        if not obj_id in self._objects:
+            # raise exception?
+            raise Exception('id not found')
+        del self._objects[obj_id]
+
     async def gen_insert_object(self, new_id, type_id, data):
         self.check_insert_object_vars(new_id, type_id, data)
 
@@ -87,11 +113,12 @@ class KvetchMemShard(KvetchShard):
             'from_id': from_id,
             'to_id': to_id,
             'data': data,
-            'updated': datetime.now()
+            'created': datetime.now(),
+            'updated': datetime.now(),
         }
         safe_append_to_dict_of_list(self._all_edges[edge_name], from_id, edge_entry)
 
-        sorted(self._all_edges[edge_name][from_id], key=lambda edge: edge['to_id'])
+        self._all_edges[edge_name][from_id] = sorted(self._all_edges[edge_name][from_id], key=lambda edge: edge['created'])
 
     def get_after_index(self, edges, after):
         index = 0
@@ -104,6 +131,7 @@ class KvetchMemShard(KvetchShard):
     async def gen_edges(self, edge_definition, from_id, after=None, first=None):
         param_check(from_id, UUID, 'from_id')
         edges = self._all_edges[edge_definition.edge_name()].get(from_id, [])
+
 
         if after:
             index = self.get_after_index(edges, after)
