@@ -1,3 +1,5 @@
+import re
+
 from datetime import datetime
 from uuid import UUID
 
@@ -91,15 +93,20 @@ def print_graphql_field(writer, grapple_field):
     writer.line("'%s': GraphQLField(" % grapple_field.name())
     writer.increase_indent() # begin args to GraphQLField .ctor
     writer.line('type=%s,' % type_ref_str)
-    writer.line('args={')
-    writer.increase_indent() # begin entries in args dictionary
 
-    for grapple_arg in grapple_field.args():
-        arg_type_ref_str = type_ref_string(grapple_arg.type_ref())
-        writer.line("'%s': GraphQLArgument(type=%s)," % (grapple_arg.name(), arg_type_ref_str))
+    if grapple_field.args():
+        writer.line('args={')
+        writer.increase_indent() # begin entries in args dictionary
+        for grapple_arg in grapple_field.args():
+            arg_type_ref_str = type_ref_string(grapple_arg.type_ref())
+            writer.line("'%s': GraphQLArgument(type=%s)," % (grapple_arg.name(), arg_type_ref_str))
 
-    writer.decrease_indent() # end entries in args dictionary
-    writer.line('},') # close args dictionary
+        writer.decrease_indent() # end entries in args dictionary
+        writer.line('},') # close args dictionary
+
+    if grapple_field.requires_lambda():
+        writer.line('resolver=lambda obj, args, *_: obj.%s(*args),' % grapple_field.method_name())
+
     writer.decrease_indent() # end args to GraphQLField .ctor
     writer.line('),') # close GraphQLField .ctor
 
@@ -147,16 +154,22 @@ class GrappleField:
         self._name = name
         self._grapple_type_ref = grapple_type_ref
         self._args = args
+        self._requires_lambda = is_builtin_name(name) or is_camel_case(name)
 
     def is_bare_field(self):
-        return len(self._args) == 0
+        return len(self._args) == 0 and not self.requires_lambda()
 
     def name(self):
         return self._name
 
+    def requires_lambda(self):
+        return self._requires_lambda
+
     def method_name(self):
         if is_builtin_name(self.name()):
             return self.name() + '_'
+        if is_camel_case(self.name()):
+            return to_snake_case(self.name())
         return self.name()
 
     def type_ref(self):
@@ -186,6 +199,13 @@ def create_grapple_object_type(object_type_ast):
         fields=grapple_fields,
         generate_pent=generate_pent,
     )
+
+def to_snake_case(camel_case):
+    with_underscores = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', camel_case)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', with_underscores).lower()
+
+def is_camel_case(str):
+    return re.search('[A-Z]', str)
 
 def is_builtin_name(name):
     builtins = set(['id'])

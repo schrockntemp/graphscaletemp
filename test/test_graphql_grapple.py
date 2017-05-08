@@ -16,7 +16,6 @@ def test_basic_type():
         )
 """
 
-@pytest.mark.skip
 def test_non_pythonic_name():
     graphql = """type Test { longName: String }"""
     result = print_graphql_defs(parse_grapple(graphql))
@@ -27,8 +26,8 @@ def test_non_pythonic_name():
             name='Test',
             fields=lambda: {
                 'longName': GraphQLField(
-                    type=GraphQLString
-                    resolver=lambda obj, args, *_: obj.long_name(*args)
+                    type=GraphQLString,
+                    resolver=lambda obj, args, *_: obj.long_name(*args),
                 ),
             },
         )

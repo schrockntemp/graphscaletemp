@@ -10,6 +10,9 @@ from graphscale.kvetch.kvetch_dbshard import (
     KvetchDbIndexDefinition,
     KvetchDbEdgeDefinition,
     KvetchDbSingleConnectionPool,
+)
+
+from graphscale.kvetch.sync import (
     sync_kv_insert_object,
     sync_kv_get_object,
     sync_kv_get_objects,

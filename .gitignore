@@ -93,11 +93,11 @@ ENV/
 
 # Rope project settings
 .ropeproject
-*.ropeproject
-*.ropeproject/
-.ropeproject/*
+.vscode/.ropeproject/
 
 # mkdocs documentation
 /site
 
 tags
+
+objectdb
