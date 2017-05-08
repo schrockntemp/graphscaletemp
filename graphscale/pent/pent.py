@@ -88,7 +88,6 @@ class Pent:
         data_list = await context.kvetch().gen_objects(ids)
         return [safe_create(context, data['id'], cls, data) for data in data_list.values()]
 
-
     def obj_id(self):
         return self._obj_id
 
@@ -99,9 +98,6 @@ class Pent:
         return self._data
 
     async def gen_edges_to(self, edge_name, after=None, first=None):
-        # if after is not None or first is not None:
-        #     raise Exception('after, from not supported after: %s first: %s' % (after, first))
-
         kvetch = self.kvetch()
 
         edge_definition = kvetch.get_edge_definition_by_name(edge_name)
@@ -109,8 +105,6 @@ class Pent:
         return edges
 
     async def gen_associated_pents(self, klass, edge_name, after=None, first=None):
-        # if after is not None or first is not None:
-        #     raise Exception('after, from not supported after: %s first: %s' % (after, first))
         edges = await self.gen_edges_to(edge_name, after=after, first=first)
         to_ids = [edge['to_id'] for edge in edges]
         return await klass.gen_list(self._context, to_ids)

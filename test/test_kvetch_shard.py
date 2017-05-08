@@ -73,8 +73,8 @@ def only_shard():
 
 @pytest.fixture
 def test_shard_single_edge():
-    return mem_single_edge_shard()
-    # return db_single_edge_shard()
+    # return mem_single_edge_shard()
+    return db_single_edge_shard()
 
 @pytest.fixture
 def test_shard_single_index():
@@ -247,12 +247,9 @@ def test_first_edge(test_shard_single_edge):
     sync_kv_insert_edge(shard, related_edge, id_one, id_four)
 
     assert len(sync_kv_get_edge_ids(shard, related_edge, id_one)) == 3
-    before_id_one = UUID('1b17b4d6-ad4f-4549-ab99-dece5451be6a')
 
     def get_after(a, f=None):
         return sync_kv_get_edge_ids(shard, related_edge, id_one, after=a, first=f)
-
-    assert len(get_after(before_id_one)) == 3
 
     assert len(get_after(id_two)) == 2
     assert not id_two in get_after(id_two)
@@ -265,11 +262,6 @@ def test_first_edge(test_shard_single_edge):
     assert id_four in get_after(id_three)
 
     assert len(get_after(id_four)) == 0
-
-    assert len(get_after(id_two, 1)) == 1
-    assert not id_two in get_after(id_two, 1)
-    assert id_three in get_after(id_two, 1)
-    assert not id_four in get_after(id_two, 1)
 
 def test_after_edge(test_shard_single_edge):
     shard, edges, _ = test_shard_single_edge
