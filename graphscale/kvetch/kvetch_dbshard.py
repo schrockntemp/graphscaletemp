@@ -200,31 +200,19 @@ def _kv_shard_insert_edge(shard_conn, edge_id, from_id, to_id, data):
     shard_conn.commit()
 
 def _kv_shard_get_edges(shard_conn, edge_id, from_id, after, first):
-    if after:
-        # figure out why variable assignment not working in mysql statement
-        # sql += 'SET @row_id = (SELECT row_id FROM kvetch_edges '
-        # sql += 'WHERE edge_id = %s AND from_id = %s AND to_id = %s); '
-        # args.append(edge_id)
-        # args.append(from_id.bytes)
-        # args.append(after.bytes)
-
-        row_id_sql = 'SELECT row_id FROM kvetch_edges '
-        row_id_sql += 'WHERE edge_id = %s AND from_id = %s AND to_id = %s; '
-        with shard_conn.cursor() as cursor:
-            cursor.execute(row_id_sql, (edge_id, from_id.bytes, after.bytes))
-            rows = cursor.fetchone()
-            row_id = rows['row_id']
-
     sql = 'SELECT from_id, to_id, created, body '
     sql += 'FROM kvetch_edges WHERE edge_id = %s AND from_id = %s'
     args = [edge_id, from_id.bytes]
     if after:
-        sql += ' AND row_id > %s'
-        args.append(row_id)
+        sql += """AND row_id >
+        (SELECT row_id from kvetch_edges WHERE edge_id = %s
+        AND from_id = %s
+        AND to_id = %s) """
+        args.extend([edge_id, from_id.bytes, after.bytes])
+    sql += ' ORDER BY row_id'
     if first:
         sql += ' LIMIT %s' % first
-    sql += ';'
-    rows = []
+
     with shard_conn.cursor() as cursor:
         cursor.execute(sql, tuple(args))
         rows = cursor.fetchall()
