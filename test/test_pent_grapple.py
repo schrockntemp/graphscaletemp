@@ -1,19 +1,19 @@
 from graphscale.grapple.grapple_parser import (
     parse_grapple,
-    print_grapple,
+    print_grapple_pents,
     graphql_type_to_python_type,
 )
 
 def test_no_grapple_types():
     grapple_string = """type TestObjectField {bar: FooBar}"""
     grapple_document = parse_grapple(grapple_string)
-    output = print_grapple(grapple_document)
+    output = print_grapple_pents(grapple_document)
     assert output == ""
 
 def test_ignore_type():
     grapple_string = """type TestObjectField @generatePent {bar: FooBar} type Other { }"""
     grapple_document = parse_grapple(grapple_string)
-    output = print_grapple(grapple_document)
+    output = print_grapple_pents(grapple_document)
     assert output == \
 """class TestObjectFieldGenerated(Pent):
 
@@ -34,7 +34,7 @@ def test_ignore_type():
 def test_required_object_field():
     grapple_string = """type TestObjectField @generatePent {bar: FooBar!}"""
     grapple_document = parse_grapple(grapple_string)
-    output = print_grapple(grapple_document)
+    output = print_grapple_pents(grapple_document)
     assert output == \
 """class TestObjectFieldGenerated(Pent):
 
@@ -55,7 +55,7 @@ def test_required_object_field():
 def test_object_field():
     grapple_string = """type TestObjectField @generatePent {bar: FooBar}"""
     grapple_document = parse_grapple(grapple_string)
-    output = print_grapple(grapple_document)
+    output = print_grapple_pents(grapple_document)
     assert output == \
 """class TestObjectFieldGenerated(Pent):
 
@@ -76,7 +76,7 @@ def test_object_field():
 def test_required_field():
     grapple_string = """type TestRequired @generatePent {id: ID!, name: String!}"""
     grapple_document = parse_grapple(grapple_string)
-    output = print_grapple(grapple_document)
+    output = print_grapple_pents(grapple_document)
     # print('OUTPUT')
     # print(output.replace(' ', '-'))
     # print('END OUTPUT')
@@ -113,7 +113,7 @@ def test_single_nullable_field():
     assert name_field.name() == 'name'
     assert name_field.type_ref().graphql_type() == 'String'
     assert name_field.type_ref().python_type() == 'str'
-    output = print_grapple(grapple_document)
+    output = print_grapple_pents(grapple_document)
     assert output == \
 """class TestGenerated(Pent):
 

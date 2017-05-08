@@ -92,8 +92,10 @@ ENV/
 .spyproject
 
 # Rope project settings
+.ropeproject
 *.ropeproject
 *.ropeproject/
+.ropeproject/*
 
 # mkdocs documentation
 /site

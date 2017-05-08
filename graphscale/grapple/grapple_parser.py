@@ -3,7 +3,7 @@ from uuid import UUID
 
 from graphql.language.source import Source
 from graphql.language.parser import parse
-from graphql.language.ast import ObjectTypeDefinition, NamedType, NonNullType
+from graphql.language.ast import ObjectTypeDefinition, NamedType, NonNullType, ListType
 
 from graphscale.utils import param_check
 
@@ -11,16 +11,82 @@ def parse_grapple(grapple_string):
     ast = parse(Source(grapple_string))
     grapple_types = []
     for type_node in ast.definitions:
-        if has_generate_pent_directive(type_node):
-            grapple_types.append(create_grapple_type_definition(type_node))
+        grapple_types.append(create_grapple_type_definition(type_node))
     return GrappleDocument(object_types=grapple_types)
 
-def print_grapple(document_ast):
+def print_grapple_pents(document_ast):
     writer = CodeWriter()
     for object_type in document_ast.object_types():
-        print_generated_pent(writer, object_type)
+        if object_type.generate_pent():
+            print_generated_pent(writer, object_type)
     writer.blank_line()
     return writer.result()
+
+def print_graphql_defs(document_ast):
+    writer = CodeWriter()
+    for object_type in document_ast.object_types():
+        print_graphql_object_type(writer, object_type)
+    return writer.result()
+
+def print_graphql_object_type(writer, grapple_type):
+    writer.line('class GraphQL%s(GrappleType):' % grapple_type.name())
+    writer.increase_indent()
+    writer.line('@staticmethod')
+    writer.line('def create_type():')
+    writer.increase_indent() # begin create_type body
+    writer.line('return GraphQLObjectType(')
+    writer.increase_indent() # begin GraphQLObjectType .ctor args
+    writer.line("name='%s'," % grapple_type.name())
+    writer.line('fields={')
+    writer.increase_indent() # begin field declarations
+    for field in grapple_type.fields():
+        print_graphql_field(writer, field)
+    writer.decrease_indent() # end field declarations
+    writer.line('},')
+    writer.decrease_indent() # end GraphQLObjectType .ctor args
+    writer.line(')')
+    writer.decrease_indent() # end create_type body
+    writer.blank_line()
+
+def type_instantiation(type_string):
+    lookup = {
+        'String': 'GraphQLString',
+        'Int': 'GraphQLInt',
+    }
+    if type_string in lookup:
+        return lookup[type_string]
+    else:
+        return 'GraphQL%s.type()' % type_string
+
+def type_ref_string(type_ref):
+    if type_ref.is_list():
+        type_ctor = 'list_of(%s)' % type_ref_string(type_ref.list_type())
+    else:
+        type_ctor = type_instantiation(type_ref.graphql_type())
+
+    if type_ref.is_nullable():
+        return type_ctor
+    else:
+        return 'req(%s)' % type_ctor
+
+def graphql_type_string(type_ref):
+    graphql_type = ''
+    if type_ref.is_list():
+        inner_type = graphql_type_string(type_ref.list_type())
+        graphql_type = '[%s]' % inner_type
+    else:
+        graphql_type = type_ref.graphql_type()
+
+    if type_ref.is_nullable():
+        return graphql_type
+    else:
+        return graphql_type + '!'
+
+def print_graphql_field(writer, grapple_field):
+    if not grapple_field.is_bare_field():
+        raise Exception('complicated fields not supported yet.')
+    type_ref_str = type_ref_string(grapple_field.type_ref())
+    writer.line("'%s': GraphQLField(type=%s)," % (grapple_field.name(), type_ref_str))
 
 def graphql_type_to_python_type(graphql_type):
     scalars = {
@@ -43,13 +109,14 @@ class GrappleDocument:
         return self._object_types
 
 class GrappleTypeDefinition:
-    def __init__(self, *, name, fields):
+    def __init__(self, *, name, fields, generate_pent):
         self._name = name
         self._fields = fields
+        self._generate_pent = generate_pent
 
     @staticmethod
-    def object_type(*, name, fields):
-        return GrappleTypeDefinition(name=name, fields=fields)
+    def object_type(*, name, fields, generate_pent):
+        return GrappleTypeDefinition(name=name, fields=fields, generate_pent=generate_pent)
 
     def name(self):
         return self._name
@@ -57,10 +124,16 @@ class GrappleTypeDefinition:
     def fields(self):
         return self._fields
 
+    def generate_pent(self):
+        return self._generate_pent
+
 class GrappleField:
     def __init__(self, *, name, grapple_type_ref):
         self._name = name
         self._grapple_type_ref = grapple_type_ref
+
+    def is_bare_field(self):
+        return True
 
     def name(self):
         return self._name
@@ -88,7 +161,12 @@ def create_grapple_type_definition(type_ast):
 def create_grapple_object_type(object_type_ast):
     grapple_type_name = object_type_ast.name.value
     grapple_fields = [create_grapple_field(field) for field in object_type_ast.fields]
-    return GrappleTypeDefinition.object_type(name=grapple_type_name, fields=grapple_fields)
+    generate_pent = has_generate_pent_directive(object_type_ast)
+    return GrappleTypeDefinition.object_type(
+        name=grapple_type_name,
+        fields=grapple_fields,
+        generate_pent=generate_pent,
+    )
 
 def is_builtin_name(name):
     builtins = set(['id'])
@@ -101,9 +179,7 @@ def create_grapple_field(graphql_field):
     )
 
 class GrappleTypeRef:
-    def __init__(self, *, graphql_type, python_type, is_nullable, is_list=False, list_type=None):
-        param_check(graphql_type, str, 'graphql_type')
-        param_check(python_type, str, 'python_type')
+    def __init__(self, *, graphql_type=None, python_type=None, is_nullable, is_list=False, list_type=None):
         param_check(is_nullable, bool, 'is_nullable')
         param_check(is_list, bool, 'is_list')
         self._graphql_type = graphql_type
@@ -111,6 +187,10 @@ class GrappleTypeRef:
         self._is_nullable = is_nullable
         self._is_list = is_list
         self._list_type = list_type
+
+    @staticmethod
+    def create_list_ref(*, list_type, is_nullable):
+        return GrappleTypeRef(is_list=True, list_type=list_type, is_nullable=is_nullable)
 
     def graphql_type(self):
         return self._graphql_type
@@ -120,6 +200,12 @@ class GrappleTypeRef:
 
     def is_nullable(self):
         return self._is_nullable
+
+    def is_list(self):
+        return self._is_list
+
+    def list_type(self):
+        return self._list_type
 
 def create_grapple_type_ref(graphql_type_ast):
     if isinstance(graphql_type_ast, NamedType):
@@ -132,9 +218,19 @@ def create_grapple_type_ref(graphql_type_ast):
     elif isinstance(graphql_type_ast, NonNullType) and isinstance(graphql_type_ast.type, NamedType):
         core_graphql_type = graphql_type_ast.type.name.value
         return GrappleTypeRef(
-            graphql_type=core_graphql_type + '!',
+            graphql_type=core_graphql_type,
             python_type=graphql_type_to_python_type(core_graphql_type),
             is_nullable=False
+        )
+    elif isinstance(graphql_type_ast, ListType):
+        return GrappleTypeRef.create_list_ref(
+            list_type=create_grapple_type_ref(graphql_type_ast.type),
+            is_nullable=True,
+        )
+    elif isinstance(graphql_type_ast, NonNullType) and isinstance(graphql_type_ast.type, ListType):
+        return GrappleTypeRef.create_list_ref(
+            list_type=create_grapple_type_ref(graphql_type_ast.type.type),
+            is_nullable=False,
         )
 
     raise Exception('not supported')
@@ -195,7 +291,8 @@ def print_is_input_data_valid(writer, grapple_type):
     writer.blank_line()
 
 def print_required_data_check(writer, field):
-    python_type, graphql_type = (field.type_ref().python_type(), field.type_ref().graphql_type())
+    python_type = field.type_ref().python_type()
+    graphql_type = graphql_type_string(field.type_ref())
     print_if_return_false(
         writer,
         "if req_data_elem_invalid(data, '%s', %s): # %s: %s" %
@@ -203,7 +300,8 @@ def print_required_data_check(writer, field):
     )
 
 def print_optional_data_check(writer, field):
-    python_type, graphql_type = (field.type_ref().python_type(), field.type_ref().graphql_type())
+    python_type = field.type_ref().python_type()
+    graphql_type = graphql_type_string(field.type_ref())
     print_if_return_false(
         writer,
         "if opt_data_elem_invalid(data, '%s', %s): # %s: %s" %

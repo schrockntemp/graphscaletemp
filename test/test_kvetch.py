@@ -74,6 +74,7 @@ async def test_insert_get(no_index_kvetch):
     assert new_obj['__type_id'] == 1000
     assert new_obj['num'] == 4
 
+@pytest.mark.asyncio
 async def test_insert_update_get(no_index_kvetch):
     new_id = await no_index_kvetch.gen_insert_object(1000, {'num' : 4})
     obj_t_one = await no_index_kvetch.gen_object(new_id)
@@ -82,11 +83,12 @@ async def test_insert_update_get(no_index_kvetch):
     obj_t_two = await no_index_kvetch.gen_object(new_id)
     assert obj_t_two['num'] == 5
 
+@pytest.mark.asyncio
 async def test_insert_delete(no_index_kvetch):
     new_id = await no_index_kvetch.gen_insert_object(1000, {'num' : 4})
     obj_t_one = await no_index_kvetch.gen_object(new_id)
     assert obj_t_one['num'] == 4
-    await no_index_kvetch.delete_object(new_id)
+    await no_index_kvetch.gen_delete_object(new_id)
     obj_t_two = await no_index_kvetch.gen_object(new_id)
     assert obj_t_two is None
 
