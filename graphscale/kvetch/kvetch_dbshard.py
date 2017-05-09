@@ -1,5 +1,3 @@
-import pickle
-import zlib
 from datetime import datetime
 from uuid import UUID
 
@@ -12,6 +10,8 @@ from graphscale.kvetch.kvetch import (
     KvetchIndexDefinition,
     KvetchEdgeDefinition,
 )
+
+from .kvetch_utils import data_to_body, body_to_data, row_to_obj
 
 class KvetchDbSingleConnectionPool:
     def __init__(self, conn):
@@ -114,18 +114,6 @@ class KvetchDbShard(KvetchShard):
             target_column='target_id',
         )
 
-def data_to_body(data):
-    return zlib.compress(pickle.dumps(data))
-
-def body_to_data(body):
-    if body is None:
-        return {}
-    return pickle.loads(zlib.decompress((body)))
-
-def row_to_obj(row):
-    id_dict = {'id' : UUID(bytes=row['id']), '__type_id' : row['type_id']}
-    body_dict = body_to_data(row['body'])
-    return {**id_dict, **body_dict}
 
 def _kv_shard_get_object(shard_conn, obj_id):
     obj_dict = _kv_shard_get_objects(shard_conn, [obj_id])

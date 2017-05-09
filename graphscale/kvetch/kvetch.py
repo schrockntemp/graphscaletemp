@@ -58,9 +58,6 @@ class Kvetch:
         param_check(obj_id, UUID, 'obj_id')
         return int(obj_id) % len(self._shards)
 
-    def create_new_id(self): # seperate methdo in order to stub out in tests
-        return uuid4()
-
     async def gen_update_object(self, obj_id, data):
         param_check(obj_id, UUID, 'obj_id')
         param_check(data, dict, 'data')
@@ -76,7 +73,8 @@ class Kvetch:
     async def gen_insert_object(self, type_id, data):
         param_check(type_id, int, 'type_id')
         param_check(data, dict, 'data')
-        new_id = self.create_new_id()
+
+        new_id = uuid4()
         shard = self.get_shard_from_obj_id(new_id)
         await shard.gen_insert_object(new_id, type_id, data)
 
