@@ -66,15 +66,15 @@ def db_single_edge_shard():
     init_shard_db_tables(shard, indexes)
     return (shard, edges, indexes)
 
-@pytest.fixture
-def only_shard():
-    shard, _, __ = test_shard_single_edge()
-    return shard
+# @pytest.fixture
+# def only_shard():
+#     shard, _, __ = test_shard_single_edge()
+#     return shard
 
 @pytest.fixture
 def test_shard_single_edge():
-    # return mem_single_edge_shard()
-    return db_single_edge_shard()
+    return mem_single_edge_shard()
+    # return db_single_edge_shard()
 
 @pytest.fixture
 def test_shard_single_index():
@@ -119,6 +119,18 @@ def insert_test_obj(shard, data):
     new_id = uuid4()
     sync_kv_insert_object(shard, new_id, 1000, data)
     return new_id
+
+def get_only_shard_fixtures():
+    fixture_funcs = []
+    if MagnusConn.is_db_unittest_up():
+        fixture_funcs.append(db_single_edge_shard)
+    fixture_funcs.append(mem_single_edge_shard)
+    return fixture_funcs
+
+@pytest.fixture(params=get_only_shard_fixtures())
+def only_shard(request):
+    shard, _, _ = request.param()
+    return shard
 
 def test_object_insert(only_shard):
     shard = only_shard

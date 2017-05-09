@@ -5,6 +5,8 @@
 #FROM mysql:8.0.1 pymysql SQL does not work on 
 FROM mysql:5.5
 
+# this is clowntown insecure and should not be emulated in production
+
 ENV MYSQL_ROOT_PASSWORD passwordfortest
 
 ENV MYSQL_DATABASE graphscale-unittest

@@ -44,6 +44,14 @@ class MagnusConn:
         # return MagnusConn.conn
 
     @staticmethod
+    def is_db_unittest_up():
+        try:
+            MagnusConn.get_unittest_conn()
+        except pymysql.err.OperationalError:
+            return False
+        return True
+
+    @staticmethod
     def get_conn(db_name):
         if db_name in MagnusConn.conns:
             return MagnusConn.conns[db_name]
@@ -52,7 +60,6 @@ class MagnusConn:
             user='magnus',
             password='magnus',
             db=db_name,
-            # was utf8mb4
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor)
         return MagnusConn.conns[db_name]
