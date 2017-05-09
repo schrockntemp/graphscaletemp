@@ -50,7 +50,7 @@ class MagnusConn:
         except pymysql.err.OperationalError:
             return False
         return True
-
+# 
     @staticmethod
     def get_conn(db_name):
         if db_name in MagnusConn.conns:
