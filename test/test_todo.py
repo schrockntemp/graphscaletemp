@@ -41,12 +41,6 @@ from graphscale.pent.pent import (
 
 from .test_utils import *
 
-def init_clear_kvetch_context(context):
-    drop_objects_table(context.conn())
-    drop_index_table(context.conn(), 'todo_items')
-    create_kvetch_objects_table(context.conn())
-    create_kvetch_index_table(context.conn(), 'todo_items')
-
 @pytest.fixture
 def test_cxt():
     return mem_context()
