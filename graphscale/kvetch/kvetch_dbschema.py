@@ -1,4 +1,4 @@
-from graphscale.utils import (execute_sql, param_check)
+from graphscale.utils import execute_sql, param_check
 
 def create_kvetch_objects_table_sql():
     return """CREATE TABLE kvetch_objects (

@@ -32,25 +32,18 @@ class MagnusConn:
     @staticmethod
     def get_unittest_conn():
         return MagnusConn.get_conn('graphscale-unittest')
-        # if MagnusConn.conn is not None:
-        #     return MagnusConn.conn
-        # MagnusConn.conn = pymysql.connect(
-        #     host='localhost',
-        #     user='magnus',
-        #     password='magnus',
-        #     db='unittest_mysql_db',
-        #     charset='utf8mb4',
-        #     cursorclass=pymysql.cursors.DictCursor)
-        # return MagnusConn.conn
 
     @staticmethod
     def is_db_unittest_up():
+        """Tests to see if the unittest-mysql is up and running on the localhost
+        This allows for the conditional execution of tests on the db shards in addition
+        to the memory shards"""
         try:
             MagnusConn.get_unittest_conn()
         except pymysql.err.OperationalError:
             return False
         return True
-# 
+
     @staticmethod
     def get_conn(db_name):
         if db_name in MagnusConn.conns:
