@@ -34,17 +34,16 @@ from graphscale.kvetch.kvetch_dbschema import (
 )
 
 from graphscale.pent.pent import (
-    PentConfig,
     PentContext,
     Pent
 )
 
-from .test_utils import *
+from .test_utils import MagnusConn
 
 @pytest.fixture
 def test_cxt():
     return mem_context()
-    # return db_context()
+        # return db_context()
 
 def db_context():
     KvetchMemIndexDefinition(indexed_attr='user_id', index_name='todo_item_user_index')
@@ -94,7 +93,7 @@ async def test_create_update_user(test_cxt):
     await update_todo_user(test_cxt, new_id, TodoUserInput(name='New Name'))
     user_t_two = await TodoUser.gen(test_cxt, new_id)
     assert user_t_two.name() == 'New Name'
-    
+
 @pytest.mark.asyncio
 async def test_gen_user(test_cxt):
     new_user = await create_todo_user(test_cxt, TodoUserInput(name='Test Name'))

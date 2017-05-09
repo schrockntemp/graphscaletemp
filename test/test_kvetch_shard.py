@@ -35,7 +35,7 @@ from graphscale.kvetch.kvetch_dbschema import (
     init_shard_db_tables,
 )
 
-from .test_utils import MagnusConn
+from .test_utils import MagnusConn, db_mem_fixture
 
 def mem_single_edge_shard():
     related_edge = KvetchMemEdgeDefinition(
@@ -65,75 +65,52 @@ def db_single_edge_shard():
     init_shard_db_tables(shard, indexes)
     return (shard, edges, indexes)
 
-def get_shard_single_edge_fixtures():
+def mem_edge_and_index_shard():
+    related_edge = KvetchMemEdgeDefinition(
+        edge_name='related_edge',
+        edge_id=12345,
+        from_id_attr='related_id',
+    )
+    num_index = KvetchMemIndexDefinition(
+        indexed_attr='num',
+        index_name='num_index'
+    )
+    edges = {'related_edge': related_edge}
+    indexes = {'num_index': num_index}
+    return (KvetchMemShard(), edges, indexes)
 
-    fixture_funcs = []
-    if MagnusConn.is_db_unittest_up():
-        fixture_funcs.append(db_single_edge_shard)
-    fixture_funcs.append(mem_single_edge_shard)
-    return fixture_funcs
+def db_edge_and_index_shard():
+    related_edge = KvetchDbEdgeDefinition(
+        edge_name='related_edge',
+        edge_id=12345,
+        from_id_attr='related_id'
+    )
+    num_index = KvetchDbIndexDefinition(
+        indexed_attr='num',
+        indexed_sql_type='INT',
+        index_name='num_index'
+    )
+    shard = KvetchDbShard(
+        pool=KvetchDbSingleConnectionPool(MagnusConn.get_unittest_conn()),
+    )
+    edges = {'related_edge': related_edge}
+    indexes = {'num_index': num_index}
+    drop_shard_db_tables(shard, indexes)
+    init_shard_db_tables(shard, indexes)
+    return shard, edges, indexes
 
-@pytest.fixture(params=get_shard_single_edge_fixtures())
-def test_shard_single_edge(request):
-    return request.param()
-
-def get_shard_single_index_fixtures():
-    def mem_edge_and_index_shard():
-        related_edge = KvetchMemEdgeDefinition(
-            edge_name='related_edge',
-            edge_id=12345,
-            from_id_attr='related_id',
-        )
-        num_index = KvetchMemIndexDefinition(
-            indexed_attr='num',
-            index_name='num_index'
-        )
-        edges = {'related_edge': related_edge}
-        indexes = {'num_index': num_index}
-        return (KvetchMemShard(), edges, indexes)
-
-    def db_edge_and_index_shard():
-        related_edge = KvetchDbEdgeDefinition(
-            edge_name='related_edge',
-            edge_id=12345,
-            from_id_attr='related_id'
-        )
-        num_index = KvetchDbIndexDefinition(
-            indexed_attr='num',
-            indexed_sql_type='INT',
-            index_name='num_index'
-        )
-        shard = KvetchDbShard(
-            pool=KvetchDbSingleConnectionPool(MagnusConn.get_unittest_conn()),
-        )
-        edges = {'related_edge': related_edge}
-        indexes = {'num_index': num_index}
-        drop_shard_db_tables(shard, indexes)
-        init_shard_db_tables(shard, indexes)
-        return shard, edges, indexes
-
-    fixture_funcs = []
-    if MagnusConn.is_db_unittest_up():
-        fixture_funcs.append(db_edge_and_index_shard)
-    fixture_funcs.append(mem_edge_and_index_shard)
-    return fixture_funcs
-
-@pytest.fixture(params=get_shard_single_index_fixtures())
+@pytest.fixture(params=db_mem_fixture(mem=mem_edge_and_index_shard, db=db_edge_and_index_shard))
 def test_shard_single_index(request):
     return request.param()
 
-def get_only_shard_fixtures():
-    fixture_funcs = []
-    if MagnusConn.is_db_unittest_up():
-        fixture_funcs.append(db_single_edge_shard)
-    fixture_funcs.append(mem_single_edge_shard)
-    return fixture_funcs
-
-@pytest.fixture(params=get_only_shard_fixtures())
+@pytest.fixture(params=db_mem_fixture(mem=mem_single_edge_shard, db=db_single_edge_shard))
 def only_shard(request):
     shard, _, _ = request.param()
     return shard
 
+@pytest.fixture(params=db_mem_fixture(mem=mem_single_edge_shard, db=db_single_edge_shard))
+def test_shard_single_edge(request):
+    return request.param()
 
 def insert_test_obj(shard, data):
     new_id = uuid4()

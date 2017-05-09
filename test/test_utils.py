@@ -32,3 +32,9 @@ class MagnusConn:
             cursorclass=pymysql.cursors.DictCursor)
         return MagnusConn.conns[db_name]
 
+def db_mem_fixture(*, mem, db):
+    fixture_funcs = []
+    if MagnusConn.is_db_unittest_up():
+        fixture_funcs.append(db)
+    fixture_funcs.append(mem)
+    return fixture_funcs
