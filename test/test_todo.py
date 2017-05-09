@@ -38,20 +38,15 @@ from graphscale.pent.pent import (
     Pent
 )
 
-from .test_utils import MagnusConn
-
-@pytest.fixture
-def test_cxt():
-    return mem_context()
-        # return db_context()
+from .test_utils import MagnusConn, db_mem_fixture
 
 def db_context():
     KvetchMemIndexDefinition(indexed_attr='user_id', index_name='todo_item_user_index')
-    edges = KvetchDbEdgeDefinition(
+    edges = [KvetchDbEdgeDefinition(
         edge_name='user_to_todo_edge',
         edge_id=9283,
         from_id_attr='user_id',
-    )
+    )]
     shards = [KvetchDbShard(
         pool=KvetchDbSingleConnectionPool(MagnusConn.get_unittest_conn()),
     )]
@@ -61,7 +56,6 @@ def db_context():
         kvetch=Kvetch(shards=shards, edges=edges, indexes=[]),
         config=get_todo_config()
     )
-
 
 def mem_context():
     edges = [KvetchMemEdgeDefinition(
@@ -74,6 +68,10 @@ def mem_context():
         kvetch=Kvetch(shards=shards, edges=edges, indexes=[]),
         config=get_todo_config()
     )
+
+@pytest.fixture(params=db_mem_fixture(mem=mem_context, db=db_context))
+def test_cxt(request):
+    return request.param()
 
 def test_todo(test_cxt):
     obj_id = uuid4()
