@@ -31,7 +31,7 @@ class MagnusConn:
 
     @staticmethod
     def get_unittest_conn():
-        return MagnusConn.get_conn('unittest_mysql_db')
+        return MagnusConn.get_conn('graphscale-unittest')
         # if MagnusConn.conn is not None:
         #     return MagnusConn.conn
         # MagnusConn.conn = pymysql.connect(
@@ -52,6 +52,7 @@ class MagnusConn:
             user='magnus',
             password='magnus',
             db=db_name,
+            # was utf8mb4
             charset='utf8mb4',
             cursorclass=pymysql.cursors.DictCursor)
         return MagnusConn.conns[db_name]
