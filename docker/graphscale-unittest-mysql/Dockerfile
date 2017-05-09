@@ -1,5 +1,8 @@
-# Use an official Python runtime as a base image
-#FROM mysql:8.0.1
+# pymysql does not work on mysql 8 because of a bug with charsets.
+# They take a query from information_schema.collations and hardcode
+# it as python objects. See charset.py#46 in pymysql for more details
+
+#FROM mysql:8.0.1 pymysql SQL does not work on 
 FROM mysql:5.5
 
 ENV MYSQL_ROOT_PASSWORD passwordfortest
