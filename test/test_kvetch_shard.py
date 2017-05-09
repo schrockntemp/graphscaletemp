@@ -156,7 +156,6 @@ def test_object_insert_get(only_shard):
     assert new_data['num'] == 3
     assert new_data['__type_id'] == 1000
 
-
 def test_objects_insert_get(only_shard):
     shard = only_shard
     data_one = {'num': 4}
