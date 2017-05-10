@@ -131,7 +131,7 @@ def test_object_insert_get(only_shard):
     new_data = sync_kv_get_object(shard, new_id)
     assert new_data['obj_id'] == new_id
     assert new_data['num'] == 3
-    assert new_data['__type_id'] == 1000
+    assert new_data['type_id'] == 1000
 
 def test_objects_insert_get(only_shard):
     shard = only_shard
@@ -180,7 +180,7 @@ def test_object_insert_id(only_shard):
                               new_id, 1000, {'obj_id': 234})
     with pytest.raises(ValueError):
         sync_kv_insert_object(only_shard,
-                              new_id, 1000, {'__type_id': 234})
+                              new_id, 1000, {'type_id': 234})
     with pytest.raises(ValueError):
         sync_kv_insert_object(only_shard,
                               new_id, None, {'name': 'Joe'})

@@ -9,8 +9,8 @@ class KvetchShard:
         if 'obj_id' in data:
             raise ValueError('Cannot specify obj_id')
 
-        if '__type_id' in data:
-            raise ValueError('Cannot specify __type_id')
+        if 'type_id' in data:
+            raise ValueError('Cannot specify type_id')
 
 class KvetchIndexDefinition:
     async def gen_all(self, _shard, _value):

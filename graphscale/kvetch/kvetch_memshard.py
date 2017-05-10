@@ -92,7 +92,7 @@ class KvetchMemShard(KvetchShard):
         self.check_insert_object_vars(new_id, type_id, data)
 
         self._objects[new_id] = {
-            **{'obj_id': new_id, '__type_id': type_id, 'updated': datetime.now()},
+            **{'obj_id': new_id, 'type_id': type_id, 'updated': datetime.now()},
             **data
         }
         return new_id

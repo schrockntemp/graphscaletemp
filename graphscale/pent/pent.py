@@ -29,14 +29,14 @@ class PentConfig:
 
 async def load_pent(context, obj_id):
     data = await context.kvetch().gen_object(obj_id)
-    klass = context.config().get_type(data['__type_id'])
+    klass = context.config().get_type(data['type_id'])
     return safe_create(context, obj_id, klass, data)
 
 async def load_pents(context, ids):
     obj_dict = await context.kvetch().gen_objects(ids)
     pent_dict = {}
     for obj_id, data in obj_dict.items():
-        klass = context.config().get_type(data['__type_id'])
+        klass = context.config().get_type(data['type_id'])
         pent_dict[obj_id] = safe_create(context, obj_id, klass, data)
     return pent_dict
 
