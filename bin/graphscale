@@ -16,12 +16,39 @@ def genpents(file):
     pents = print_grapple_pents(ast)
     print(pents)
 
+def grapple_graphql_header():
+    return """#W0661: unused imports lint
+#pylint: disable=W0611
+
+from graphql import (
+    GraphQLSchema,
+    GraphQLObjectType,
+    GraphQLField,
+    GraphQLString,
+    GraphQLArgument,
+    GraphQLList,
+    GraphQLInt,
+    GraphQLInputObjectType,
+    GraphQLInputObjectField,
+    GraphQLNonNull,
+    GraphQLID,
+)
+
+from graphscale.grapple import (
+    GrappleType,
+    id_field,
+    req,
+    list_of
+)
+"""
+
 @click.command(short_help='Generate graphql type defs from graphql file')
 @click.argument('file', type=click.Path())
 def gengraphql(file):
     fff = open(file, 'r')
     text = fff.read()
     ast = parse_grapple(text)
+    print(grapple_graphql_header())
     defs = print_graphql_defs(ast)
     print(defs)
 

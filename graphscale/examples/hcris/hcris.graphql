@@ -1,3 +1,4 @@
 type Hospital @generatePent {
+    id: ID!
     providerNumber: String!
 } 

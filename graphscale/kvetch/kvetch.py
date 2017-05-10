@@ -33,6 +33,10 @@ class KvetchEdgeDefinition:
 
 class Kvetch:
     def __init__(self, *, shards, edges, indexes):
+        param_check(shards, list, 'shards')
+        param_check(edges, list, 'edges')
+        param_check(indexes, list, 'indexes')
+
         self._shards = shards
         # shard => shard_id
         self._shard_lookup = dict(zip(self._shards, range(0, len(shards))))
