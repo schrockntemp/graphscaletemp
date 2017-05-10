@@ -1,7 +1,7 @@
 from graphscale.utils import execute_sql, param_check
 
 def create_kvetch_objects_table_sql():
-    return """CREATE TABLE kvetch_objects (
+    return """CREATE TABLE IF NOT EXISTS kvetch_objects (
     row_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     id BINARY(16) NOT NULL,
     type_id INT NOT NULL,
@@ -32,7 +32,7 @@ def create_kvetch_index_table_sql(index_column, index_sql_type, target_column, i
        index_column, target_column, target_column, index_column)
 
 def create_kvetch_edge_table_sql():
-    return """CREATE TABLE kvetch_edges (
+    return """CREATE TABLE IF NOT EXISTS kvetch_edges (
     row_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     edge_id INT NOT NULL,
     from_id BINARY(16) NOT NULL,
