@@ -64,7 +64,7 @@ app = Flask(__name__)
 # )
 
 async def gen_main():
-    return 'foo'
+    return 'foobar'
     # pent_context = create_pent_context()
     # user = await create_todo_user(pent_context, TodoUserInput(name='Joe'))
     # return user
