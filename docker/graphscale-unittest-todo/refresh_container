@@ -1,0 +1,4 @@
+docker rm -f graphscale-unittest-todo-container
+docker build -t graphscale-unittest-todo-image .
+docker run --name graphscale-unittest-todo-container -p 80:80 -d graphscale-unittest-todo-image
+

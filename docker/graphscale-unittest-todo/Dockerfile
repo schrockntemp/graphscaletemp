@@ -5,3 +5,7 @@ COPY ./app /app
 RUN pip install --upgrade pip
 
 RUN pip install -r requirements.txt
+
+RUN pip install -e git+https://github.com/schrockntemp/graphscaletemp.git#egg=graphscale
+
+RUN pip install -e git+https://github.com/graphql-python/flask-graphql.git#egg=flask-graphql

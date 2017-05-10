@@ -32,7 +32,6 @@ from graphql.execution.executors.asyncio import AsyncioExecutor
 
 from flask_graphql import GraphQLView
 
-
 def create_pent_context():
     edges = [KvetchDbEdgeDefinition(
         edge_name='user_to_todo_edge',
@@ -69,7 +68,6 @@ async def gen_main():
 
 @app.route("/")
 def hello():
-    print(create_todo_schema())
     user_id = execute_gen(gen_main()).obj_id()
     # query = '{ user(id: "%s") { id, name } }' % user_id
     # pent_context = create_pent_context()
