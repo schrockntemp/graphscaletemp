@@ -1,0 +1,4 @@
+docker rm -f graphscale-hcrisql-test-app-container
+docker build -t graphscale-hcrisql-test-app-image .
+docker run --name graphscale-hcrisql-test-app-container -p 80:80 -d graphscale-hcrisql-test-app-image
+

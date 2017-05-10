@@ -1,6 +1,0 @@
-graphql-core
-graphql-server-core
-promise
-PyMySql
-redis
-six
