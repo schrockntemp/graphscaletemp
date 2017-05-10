@@ -17,14 +17,14 @@ from graphscale.kvetch.kvetch_dbshard import (
 from graphscale.pent.pent import (
     PentContext
 )
-from examples.todo.todo_pents import (
+from graphscale.examples.todo.todo_pents import (
     create_todo_user,
     TodoUserInput,
     TodoUser,
     get_todo_config,
 )
 
-from examples.todo.todo_graphql import create_todo_schema
+from graphscale.examples.todo.todo_graphql import create_todo_schema
 
 from test.test_utils import MagnusConn
 

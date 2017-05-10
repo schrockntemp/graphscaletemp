@@ -14,7 +14,7 @@ from graphql import (
     GraphQLID,
 )
 
-from examples.todo.todo_pents import (
+from graphscale.examples.todo.todo_pents import (
     TodoUser,
     TodoUserInput,
     TodoItem,

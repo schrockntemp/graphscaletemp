@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from examples.todo.todo_pents import (
+from graphscale.examples.todo.todo_pents import (
     TodoItem,
     TodoItemInput,
     TodoUser,

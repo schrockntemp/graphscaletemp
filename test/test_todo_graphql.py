@@ -2,9 +2,9 @@ import asyncio
 from uuid import UUID
 
 from graphql import graphql
-from examples.todo.todo_graphql import create_todo_schema
+from graphscale.examples.todo.todo_graphql import create_todo_schema
 
-from examples.todo.todo_pents import (
+from graphscale.examples.todo.todo_pents import (
     get_todo_config,
     create_todo_user,
     create_todo_item,
