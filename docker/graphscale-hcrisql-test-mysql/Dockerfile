@@ -9,7 +9,7 @@ FROM mysql:5.5
 
 ENV MYSQL_ROOT_PASSWORD passwordfortest
 
-ENV MYSQL_DATABASE graphscale-hcrisql
+ENV MYSQL_DATABASE graphscale-hcrisql-db
 
 ENV MYSQL_USER magnus
 
