@@ -23,19 +23,12 @@ from examples.todo.todo_pents import (
     delete_todo_user,
 )
 
-class GrappleType:
-    _memo = {}
-    @classmethod
-    def type(cls):
-        if cls in GrappleType._memo:
-            return GrappleType._memo[cls]
-        new_type = cls.create_type()
-        GrappleType._memo[cls] = new_type
-        return new_type
-
-    @classmethod
-    def create_type(cls):
-        raise Exception('must implement @classmethod create_type')
+from graphscale.grapple.grapple_types import (
+    GrappleType,
+    id_field,
+    req,
+    list_of,
+)
 
 def get_pent_genner(klass):
     async def genner(_parent, args, context, *_):
@@ -52,18 +45,6 @@ def define_top_level_getter(graphql_type, pent_type):
 
 async def gen_todo_items(user, args, _context, *_):
     return await user.gen_todo_items(after=args.get('after'), first=args.get('first'))
-
-def id_field():
-    return GraphQLField(
-        type=GraphQLNonNull(type=GraphQLID),
-        resolver=lambda obj, *_: obj.obj_id(),
-    )
-
-def req(ttype):
-    return GraphQLNonNull(type=ttype)
-
-def list_of(ttype):
-    return GraphQLList(type=ttype)
 
 class GraphQLTodoUser(GrappleType):
     @staticmethod

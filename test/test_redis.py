@@ -2,11 +2,15 @@ import redis
 from graphscale.kvetch.kvetch_utils import data_to_body, body_to_data
 from uuid import uuid4
 
+import pytest
+
+@pytest.mark.skip
 def test_redis():
     redis_instance = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
     redis_instance.set('foo', 'bar')
     assert redis_instance.get('foo') == 'bar'
 
+@pytest.mark.skip
 def test_store_kvetch_obj():
     redis_instance = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=False)
     data = {'num': 4, 'str': 'some string'}
@@ -17,6 +21,7 @@ def test_store_kvetch_obj():
     out_data = body_to_data(out_body)
     assert data == out_data
 
+@pytest.mark.skip
 def test_mget():
     redis_instance = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
     redis_instance.set('foo1', 'bar1')

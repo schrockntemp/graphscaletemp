@@ -1,7 +1,7 @@
 import asyncio
 from uuid import UUID
 
-from graphql import (graphql)
+from graphql import graphql
 from examples.todo.todo_graphql import create_todo_schema
 
 from examples.todo.todo_pents import (

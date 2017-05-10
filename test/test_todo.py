@@ -41,7 +41,6 @@ from graphscale.pent.pent import (
 from .test_utils import MagnusConn, db_mem_fixture
 
 def db_context():
-    KvetchMemIndexDefinition(indexed_attr='user_id', index_name='todo_item_user_index')
     edges = [KvetchDbEdgeDefinition(
         edge_name='user_to_todo_edge',
         edge_id=9283,
