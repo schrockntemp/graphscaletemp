@@ -43,7 +43,7 @@ tests_require = [
 ]
 
 setup(
-    name='graphpace',
+    name='graphscale',
     #version=version,
 
     # description='GraphQL Framework for Python',
@@ -74,9 +74,10 @@ setup(
     packages=find_packages(exclude=['tests']),
 
     install_requires=[
-        'pymysql>=0.7.11'
-    #    'six>=1.10.0',
-    #    'graphql-core>=1.1',
+        'pymysql',
+        'six',
+        'graphql-core',
+        'redis',
     #    'graphql-relay>=0.4.5',
     #    'promise>=2.0',
     ],
