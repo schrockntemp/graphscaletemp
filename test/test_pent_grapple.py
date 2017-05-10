@@ -20,11 +20,7 @@ def test_ignore_type():
     @staticmethod
     # This method checks to see that data coming out of the database is valid
     def is_input_data_valid(data):
-        if not isinstance(data, dict):
-            return False
-        if opt_data_elem_invalid(data, 'bar', FooBar): # bar: FooBar
-            return False
-        return True
+        raise Exception('must implement in manual class')
 
     def bar(self):
         return self._data.get('bar')
@@ -41,11 +37,7 @@ def test_required_object_field():
     @staticmethod
     # This method checks to see that data coming out of the database is valid
     def is_input_data_valid(data):
-        if not isinstance(data, dict):
-            return False
-        if req_data_elem_invalid(data, 'bar', FooBar): # bar: FooBar!
-            return False
-        return True
+        raise Exception('must implement in manual class')
 
     def bar(self):
         return self._data['bar']
@@ -62,11 +54,7 @@ def test_object_field():
     @staticmethod
     # This method checks to see that data coming out of the database is valid
     def is_input_data_valid(data):
-        if not isinstance(data, dict):
-            return False
-        if opt_data_elem_invalid(data, 'bar', FooBar): # bar: FooBar
-            return False
-        return True
+        raise Exception('must implement in manual class')
 
     def bar(self):
         return self._data.get('bar')
@@ -86,13 +74,7 @@ def test_required_field():
     @staticmethod
     # This method checks to see that data coming out of the database is valid
     def is_input_data_valid(data):
-        if not isinstance(data, dict):
-            return False
-        if req_data_elem_invalid(data, 'id', UUID): # id: ID!
-            return False
-        if req_data_elem_invalid(data, 'name', str): # name: String!
-            return False
-        return True
+        raise Exception('must implement in manual class')
 
     def obj_id(self):
         return self._data['obj_id']
@@ -120,11 +102,7 @@ def test_single_nullable_field():
     @staticmethod
     # This method checks to see that data coming out of the database is valid
     def is_input_data_valid(data):
-        if not isinstance(data, dict):
-            return False
-        if opt_data_elem_invalid(data, 'name', str): # name: String
-            return False
-        return True
+        raise Exception('must implement in manual class')
 
     def name(self):
         return self._data.get('name')

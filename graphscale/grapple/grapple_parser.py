@@ -105,7 +105,7 @@ def print_graphql_field(writer, grapple_field):
         writer.line('},') # close args dictionary
 
     if grapple_field.requires_lambda():
-        writer.line('resolver=lambda obj, args, *_: obj.%s(*args),' % grapple_field.method_name())
+        writer.line('resolver=lambda obj, args, *_: obj.%s(*args),' % grapple_field.python_name())
 
     writer.decrease_indent() # end args to GraphQLField .ctor
     writer.line('),') # close GraphQLField .ctor
@@ -165,7 +165,7 @@ class GrappleField:
     def requires_lambda(self):
         return self._requires_lambda
 
-    def method_name(self):
+    def python_name(self):
         if self.name() == 'id':
             return 'obj_id'
         if is_camel_case(self.name()):
@@ -331,18 +331,23 @@ def print_is_input_data_valid(writer, grapple_type):
     writer.line('@staticmethod')
     writer.line('# This method checks to see that data coming out of the database is valid')
     writer.line('def is_input_data_valid(data):')
-    writer.increase_indent() # begin is_input_data_valid implementation
-    print_if_return_false(writer, 'if not isinstance(data, dict):')
-    for field in grapple_type.fields():
-        type_ref = field.type_ref()
-        if type_ref.is_nullable():
-            print_optional_data_check(writer, field)
-        else:
-            print_required_data_check(writer, field)
-
-    writer.line('return True')
-    writer.decrease_indent() # end is_input_data_valid implementation
+    writer.increase_indent()
+    writer.line("raise Exception('must implement in manual class')")
+    writer.decrease_indent()
     writer.blank_line()
+
+    # writer.increase_indent() # begin is_input_data_valid implementation
+    # print_if_return_false(writer, 'if not isinstance(data, dict):')
+    # for field in grapple_type.fields():
+    #     type_ref = field.type_ref()
+    #     if type_ref.is_nullable():
+    #         print_optional_data_check(writer, field)
+    #     else:
+    #         print_required_data_check(writer, field)
+
+    # writer.line('return True')
+    # writer.decrease_indent() # end is_input_data_valid implementation
+    # writer.blank_line()
 
 def print_required_data_check(writer, field):
     python_type = field.type_ref().python_type()
@@ -350,7 +355,7 @@ def print_required_data_check(writer, field):
     print_if_return_false(
         writer,
         "if req_data_elem_invalid(data, '%s', %s): # %s: %s" %
-        (field.name(), python_type, field.name(), graphql_type)
+        (field.python_name(), python_type, field.name(), graphql_type)
     )
 
 def print_optional_data_check(writer, field):
@@ -364,11 +369,11 @@ def print_optional_data_check(writer, field):
 
 def print_generated_fields(writer, fields):
     for field in fields:
-        writer.line('def %s(self):' % field.method_name())
+        writer.line('def %s(self):' % field.python_name())
         writer.increase_indent() # begin property implemenation
         if field.type_ref().is_nullable():
-            writer.line("return self._data.get('%s')" % field.method_name())
+            writer.line("return self._data.get('%s')" % field.python_name())
         else:
-            writer.line("return self._data['%s']" % field.method_name())
+            writer.line("return self._data['%s']" % field.python_name())
         writer.decrease_indent() # end property definition
         writer.blank_line()
