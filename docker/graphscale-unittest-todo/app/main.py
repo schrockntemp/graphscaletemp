@@ -53,7 +53,7 @@ executor = AsyncioExecutor(loop=outer_loop)
 app.add_url_rule('/graphql', 
     view_func=GraphQLView.as_view(
         'graphql', 
-        schema=create_todo_schema(), 
+        schema=create_todo_schema(),
         graphiql=True, 
         executor=executor,
         context=create_pent_context(),

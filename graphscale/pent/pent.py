@@ -86,7 +86,7 @@ class Pent:
         if cls == Pent:
             return await load_pents(context, ids)
         data_list = await context.kvetch().gen_objects(ids)
-        return [safe_create(context, data['id'], cls, data) for data in data_list.values()]
+        return [safe_create(context, data['obj_id'], cls, data) for data in data_list.values()]
 
     def obj_id(self):
         return self._obj_id

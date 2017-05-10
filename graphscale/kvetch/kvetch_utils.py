@@ -12,6 +12,6 @@ def body_to_data(body):
     return pickle.loads(zlib.decompress((body)))
 
 def row_to_obj(row):
-    id_dict = {'id' : UUID(bytes=row['id']), '__type_id' : row['type_id']}
+    id_dict = {'obj_id' : UUID(bytes=row['obj_id']), '__type_id' : row['type_id']}
     body_dict = body_to_data(row['body'])
     return {**id_dict, **body_dict}

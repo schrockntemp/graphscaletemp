@@ -94,8 +94,8 @@ def test_required_field():
             return False
         return True
 
-    def id_(self):
-        return self._data['id']
+    def obj_id(self):
+        return self._data['obj_id']
 
     def name(self):
         return self._data['name']

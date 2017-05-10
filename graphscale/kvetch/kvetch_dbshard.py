@@ -121,19 +121,19 @@ def _kv_shard_get_object(shard_conn, obj_id):
 
 def _kv_shard_get_objects(shard_conn, ids):
     values_sql = ', '.join(['%s' for x in range(0, len(ids))])
-    sql = 'SELECT id, type_id, body from kvetch_objects where id in (' + values_sql + ')'
+    sql = 'SELECT obj_id, type_id, body FROM kvetch_objects WHERE obj_id in (' + values_sql + ')'
     with shard_conn.cursor() as cursor:
         cursor.execute(sql, [obj_id.bytes for obj_id in ids])
         rows = cursor.fetchall()
 
-    ids_out = [UUID(bytes=row['id']) for row in rows]
+    ids_out = [UUID(bytes=row['obj_id']) for row in rows]
     obj_list = [row_to_obj(row) for row in rows]
     return dict(zip(ids_out, obj_list))
 
 def _kv_shard_insert_object(shard_conn, new_id, type_id, data):
     with shard_conn.cursor() as cursor:
         now = datetime.now()
-        sql = 'INSERT INTO kvetch_objects(id, type_id, created, updated, body) '
+        sql = 'INSERT INTO kvetch_objects(obj_id, type_id, created, updated, body) '
         sql += 'VALUES (%s, %s, %s, %s, %s)'
         cursor.execute(sql, (new_id.bytes, type_id, now, now, data_to_body(data)))
 
@@ -143,14 +143,14 @@ def _kv_shard_insert_object(shard_conn, new_id, type_id, data):
 def _kv_shard_replace_object(shard_conn, obj_id, data):
     sql = 'UPDATE kvetch_objects '
     sql += 'SET body = %s, updated = %s '
-    sql += 'WHERE id = %s'
+    sql += 'WHERE obj_id = %s'
     with shard_conn.cursor() as cursor:
         now = datetime.now()
         cursor.execute(sql, (data_to_body(data), now, obj_id.bytes))
     shard_conn.commit()
 
 def _kv_shard_delete_object(shard_conn, obj_id):
-    sql = 'DELETE FROM kvetch_objects WHERE id = %s'
+    sql = 'DELETE FROM kvetch_objects WHERE obj_id = %s'
     with shard_conn.cursor() as cursor:
         cursor.execute(sql, (obj_id.bytes))
     shard_conn.commit()

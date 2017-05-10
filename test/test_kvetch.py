@@ -70,7 +70,7 @@ async def test_insert_get(no_index_kvetch):
     new_id = await no_index_kvetch.gen_insert_object(1000, {'num' : 4})
     assert isinstance(new_id, UUID)
     new_obj = await no_index_kvetch.gen_object(new_id)
-    assert new_obj['id'] == new_id
+    assert new_obj['obj_id'] == new_id
     assert new_obj['__type_id'] == 1000
     assert new_obj['num'] == 4
 
@@ -107,17 +107,17 @@ async def test_insert_gen_objects():
 
     expected = {
         id_one: {
-            'id': id_one,
+            'obj_id': id_one,
             '__type_id': 1000,
             'num': 4,
         },
         id_two: {
-            'id': id_two,
+            'obj_id': id_two,
             '__type_id': 1000,
             'num': 5,
         },
         id_three: {
-            'id': id_three,
+            'obj_id': id_three,
             '__type_id': 1000,
             'num': 6,
         },
@@ -138,14 +138,14 @@ async def test_many_objects_many_shards():
     count = 0
     for obj_id in ids:
         obj = await kvetch.gen_object(obj_id)
-        assert obj['id'] == obj_id
+        assert obj['obj_id'] == obj_id
         assert obj['num'] == count
         assert obj['__type_id'] == 234
         count += 1
 
     objs = await kvetch.gen_objects(ids)
     for obj_id, obj in objs.items():
-        assert obj['id'] == obj_id
+        assert obj['obj_id'] == obj_id
         assert id_to_num[obj_id] == obj['num']
 
 @pytest.mark.asyncio

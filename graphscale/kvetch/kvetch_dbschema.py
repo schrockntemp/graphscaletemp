@@ -3,12 +3,12 @@ from graphscale.utils import execute_sql, param_check
 def create_kvetch_objects_table_sql():
     return """CREATE TABLE IF NOT EXISTS kvetch_objects (
     row_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    id BINARY(16) NOT NULL,
+    obj_id BINARY(16) NOT NULL,
     type_id INT NOT NULL,
     created DATETIME NOT NULL,
     updated DATETIME NOT NULL,
     body MEDIUMBLOB,
-    UNIQUE KEY (id),
+    UNIQUE KEY (obj_id),
     KEY (updated)
 ) ENGINE=InnoDB;
 """

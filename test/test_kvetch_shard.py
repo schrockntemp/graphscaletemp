@@ -129,7 +129,7 @@ def test_object_insert_get(only_shard):
     data = {'num': 3}
     new_id = insert_test_obj(shard, data)
     new_data = sync_kv_get_object(shard, new_id)
-    assert new_data['id'] == new_id
+    assert new_data['obj_id'] == new_id
     assert new_data['num'] == 3
     assert new_data['__type_id'] == 1000
 
@@ -141,9 +141,9 @@ def test_objects_insert_get(only_shard):
     id_two = insert_test_obj(shard, data_two)
     obj_dict = sync_kv_get_objects(shard, [id_one, id_two])
     assert len(obj_dict) == 2
-    assert obj_dict[id_one]['id'] == id_one
+    assert obj_dict[id_one]['obj_id'] == id_one
     assert obj_dict[id_one]['num'] == 4
-    assert obj_dict[id_two]['id'] == id_two
+    assert obj_dict[id_two]['obj_id'] == id_two
     assert obj_dict[id_two]['num'] == 5
 
 def test_objects_insert_update_get(only_shard):
@@ -177,7 +177,7 @@ def test_object_insert_id(only_shard):
         sync_kv_insert_object(only_shard, new_id, 1000, [])
     with pytest.raises(ValueError):
         sync_kv_insert_object(only_shard,
-                              new_id, 1000, {'id': 234})
+                              new_id, 1000, {'obj_id': 234})
     with pytest.raises(ValueError):
         sync_kv_insert_object(only_shard,
                               new_id, 1000, {'__type_id': 234})

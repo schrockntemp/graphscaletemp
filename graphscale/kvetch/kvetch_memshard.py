@@ -68,7 +68,7 @@ class KvetchMemShard(KvetchShard):
 
         if not obj_id in self._objects:
             # raise exception?
-            raise Exception('id not found')
+            raise Exception('obj_id not found')
 
         obj = self._objects[obj_id]
 
@@ -92,7 +92,7 @@ class KvetchMemShard(KvetchShard):
         self.check_insert_object_vars(new_id, type_id, data)
 
         self._objects[new_id] = {
-            **{'id': new_id, '__type_id': type_id, 'updated': datetime.now()},
+            **{'obj_id': new_id, '__type_id': type_id, 'updated': datetime.now()},
             **data
         }
         return new_id

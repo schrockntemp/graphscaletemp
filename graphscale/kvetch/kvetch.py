@@ -6,8 +6,8 @@ class KvetchShard:
         param_check(new_id, UUID, 'new_id')
         param_check(type_id, int, 'type_id')
         param_check(data, dict, 'data')
-        if 'id' in data:
-            raise ValueError('Cannot specify id')
+        if 'obj_id' in data:
+            raise ValueError('Cannot specify obj_id')
 
         if '__type_id' in data:
             raise ValueError('Cannot specify __type_id')

@@ -9,7 +9,7 @@ class TodoUserGenerated(Pent):
     def is_input_data_valid(data):
         if not isinstance(data, dict):
             return False
-        if req_data_elem_invalid(data, 'id', UUID): # id: ID!
+        if req_data_elem_invalid(data, 'obj_id', UUID): # id: ID!
             return False
         if req_data_elem_invalid(data, 'name', str): # name: String!
             return False
@@ -28,7 +28,7 @@ class TodoItemGenerated(Pent):
     def is_input_data_valid(data):
         if not isinstance(data, dict):
             return False
-        if not req_data_elem_valid(data, 'id', UUID): # id: ID!
+        if not req_data_elem_valid(data, 'obj_id', UUID): # id: ID!
             return False
         if not req_data_elem_valid(data, 'text', str): # text: String!
             return False

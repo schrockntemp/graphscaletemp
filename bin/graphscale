@@ -1,20 +1,31 @@
 #!/usr/local/bin/python3
 import click
-# import sys
+from graphscale.grapple.grapple_parser import parse_grapple, print_graphql_defs, print_grapple_pents
 
 @click.group()
 def cli():
     pass
 
 @click.command(short_help='Generate pents from graphql file')
-# @click.argument('file', help='Path to graphql schema file')
 @click.argument('file', type=click.Path())
 def genpents(file):
-    print('path: ' + file)
     fff = open(file, 'r')
-    lines = fff.readlines()
-    print(lines)
+    text = fff.read()
+    # print(text)
+    ast = parse_grapple(text)
+    pents = print_grapple_pents(ast)
+    print(pents)
+
+@click.command(short_help='Generate graphql type defs from graphql file')
+@click.argument('file', type=click.Path())
+def gengraphql(file):
+    fff = open(file, 'r')
+    text = fff.read()
+    ast = parse_grapple(text)
+    defs = print_graphql_defs(ast)
+    print(defs)
 
 if __name__ == '__main__':
     cli.add_command(genpents)
+    cli.add_command(gengraphql)
     cli()

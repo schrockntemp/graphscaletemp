@@ -9,10 +9,10 @@ from graphscale.kvetch.kvetch_dbshard import (
     KvetchDbShard,
     KvetchDbSingleConnectionPool,
 )
-from graphscale.kvetch.kvetch_dbschema import (
-    init_shard_db_tables,
-    drop_shard_db_tables,
-)
+# from graphscale.kvetch.kvetch_dbschema import (
+#     init_shard_db_tables,
+#     drop_shard_db_tables,
+# )
 
 from graphscale.utils import execute_gen
 

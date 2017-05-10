@@ -154,7 +154,7 @@ class GrappleField:
         self._name = name
         self._grapple_type_ref = grapple_type_ref
         self._args = args
-        self._requires_lambda = is_builtin_name(name) or is_camel_case(name)
+        self._requires_lambda = name == 'id' or is_camel_case(name)
 
     def is_bare_field(self):
         return len(self._args) == 0 and not self.requires_lambda()
@@ -166,8 +166,8 @@ class GrappleField:
         return self._requires_lambda
 
     def method_name(self):
-        if is_builtin_name(self.name()):
-            return self.name() + '_'
+        if self.name() == 'id':
+            return 'obj_id'
         if is_camel_case(self.name()):
             return to_snake_case(self.name())
         return self.name()
@@ -206,10 +206,6 @@ def to_snake_case(camel_case):
 
 def is_camel_case(str):
     return re.search('[A-Z]', str)
-
-def is_builtin_name(name):
-    builtins = set(['id'])
-    return name in builtins
 
 class GrappleFieldArgument:
     def __init__(self, *, name, type_ref):
@@ -337,7 +333,6 @@ def print_is_input_data_valid(writer, grapple_type):
     writer.line('def is_input_data_valid(data):')
     writer.increase_indent() # begin is_input_data_valid implementation
     print_if_return_false(writer, 'if not isinstance(data, dict):')
-    # print_required_data_check(writer, 'id', 'UUID', 'ID')
     for field in grapple_type.fields():
         type_ref = field.type_ref()
         if type_ref.is_nullable():
@@ -372,8 +367,8 @@ def print_generated_fields(writer, fields):
         writer.line('def %s(self):' % field.method_name())
         writer.increase_indent() # begin property implemenation
         if field.type_ref().is_nullable():
-            writer.line("return self._data.get('%s')" % field.name())
+            writer.line("return self._data.get('%s')" % field.method_name())
         else:
-            writer.line("return self._data['%s']" % field.name())
+            writer.line("return self._data['%s']" % field.method_name())
         writer.decrease_indent() # end property definition
         writer.blank_line()
