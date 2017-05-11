@@ -23,7 +23,8 @@ def genpents(file):
 
 def grapple_graphql_header():
     return """#W0661: unused imports lint
-#pylint: disable=W0611
+#C0301: line too long
+#pylint: disable=W0611,C0301
 
 from graphql import (
     GraphQLSchema,
@@ -33,7 +34,6 @@ from graphql import (
     GraphQLArgument,
     GraphQLList,
     GraphQLInt,
-    GraphQLInputObjectField,
     GraphQLInputObjectType,
     GraphQLInputObjectField,
     GraphQLNonNull,

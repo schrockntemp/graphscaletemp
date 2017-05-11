@@ -4,6 +4,13 @@ type Hospital @generatePent {
     fiscalYearBegin: Date!
     fiscalYearEnd: Date!
     status: HospitalStatus!
+    hospitalName: String!
+    streetAddress: String!
+    poBox: String!
+    city: String!
+    state: String!
+    zipCode: String!
+    county: String!
 }
 
 input CreateHospitalInput {
@@ -11,8 +18,20 @@ input CreateHospitalInput {
     fyb: String!
     fye: String!
     status: String!
+    ctrl_type: String!
+    hosp_name: String!
+    street_addr: String!
+    po_box: String
+    city: String!
+    state: String!
+    zip_code: String!
+    county: String!
 }
 
 enum HospitalStatus {
     AS_SUBMITTED
+    SETTLED
+    AMENDED
+    SETTLED_WITH_AUDIT
+    REOPENED
 }

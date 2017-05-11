@@ -40,6 +40,30 @@ class Hospital(Pent):
         status_enum = lookup[self._data['status']]
         return status_enum
 
+    def hospital_name(self):
+        return self._data['hosp_name']
+
+    def street_address(self):
+        return self._data['street_addr']
+
+    def po_box(self):
+        return self._data['po_box']
+
+    def city(self):
+        return self._data['city']
+
+    def state(self):
+        return self._data['state']
+
+    def zip_code(self):
+        code = self._data['zip_code']
+        if code[-1] == '-':
+            return code[:-1]
+        return code
+
+    def county(self):
+        return self._data['county']
+
 # Consider if this is going to be a necessary abstraction
 class CreateHospitalInput:
     def __init__(self, data):

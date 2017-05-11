@@ -1,5 +1,6 @@
 #W0661: unused imports lint
-#pylint: disable=W0611
+#C0301: line too long
+#pylint: disable=W0611,C0301
 
 from graphql import (
     GraphQLSchema,
@@ -9,7 +10,6 @@ from graphql import (
     GraphQLArgument,
     GraphQLList,
     GraphQLInt,
-    GraphQLInputObjectField,
     GraphQLInputObjectType,
     GraphQLInputObjectField,
     GraphQLNonNull,
@@ -52,21 +52,29 @@ class GraphQLHospital(GrappleType):
                 ),
                 'status': GraphQLField(
                     type=req(GraphQLHospitalStatus.type()),
-                    resolver=lambda obj, args, *_: obj.status().name if obj else None,
+                    resolver=lambda obj, args, *_: obj.status(*args).name if obj.status(*args) else None,
                 ),
+                'hospitalName': GraphQLField(
+                    type=req(GraphQLString),
+                    resolver=lambda obj, args, *_: obj.hospital_name(*args),
+                ),
+                'streetAddress': GraphQLField(
+                    type=req(GraphQLString),
+                    resolver=lambda obj, args, *_: obj.street_address(*args),
+                ),
+                'poBox': GraphQLField(
+                    type=req(GraphQLString),
+                    resolver=lambda obj, args, *_: obj.po_box(*args),
+                ),
+                'city': GraphQLField(type=req(GraphQLString)),
+                'state': GraphQLField(type=req(GraphQLString)),
+                'zipCode': GraphQLField(
+                    type=req(GraphQLString),
+                    resolver=lambda obj, args, *_: obj.zip_code(*args),
+                ),
+                'county': GraphQLField(type=req(GraphQLString)),
             },
         )
-
-class GraphQLHospitalStatus(GrappleType):
-    @staticmethod
-    def create_type():
-        return GraphQLEnumType(
-            name='HospitalStatus',
-            values={
-                'AS_SUBMITTED': GraphQLEnumValue()
-            }
-        )
-
 
 class GraphQLCreateHospitalInput(GrappleType):
     @staticmethod
@@ -78,6 +86,28 @@ class GraphQLCreateHospitalInput(GrappleType):
                 'fyb': GraphQLInputObjectField(type=req(GraphQLString)),
                 'fye': GraphQLInputObjectField(type=req(GraphQLString)),
                 'status': GraphQLInputObjectField(type=req(GraphQLString)),
+                'ctrl_type': GraphQLInputObjectField(type=req(GraphQLString)),
+                'hosp_name': GraphQLInputObjectField(type=req(GraphQLString)),
+                'street_addr': GraphQLInputObjectField(type=req(GraphQLString)),
+                'po_box': GraphQLInputObjectField(type=GraphQLString),
+                'city': GraphQLInputObjectField(type=req(GraphQLString)),
+                'state': GraphQLInputObjectField(type=req(GraphQLString)),
+                'zip_code': GraphQLInputObjectField(type=req(GraphQLString)),
+                'county': GraphQLInputObjectField(type=req(GraphQLString)),
+            },
+        )
+
+class GraphQLHospitalStatus(GrappleType):
+    @staticmethod
+    def create_type():
+        return GraphQLEnumType(
+            name='HospitalStatus',
+            values={
+                'AS_SUBMITTED': GraphQLEnumValue(),
+                'SETTLED': GraphQLEnumValue(),
+                'AMENDED': GraphQLEnumValue(),
+                'SETTLED_WITH_AUDIT': GraphQLEnumValue(),
+                'REOPENED': GraphQLEnumValue(),
             },
         )
 

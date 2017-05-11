@@ -79,14 +79,31 @@ def test_hcris_row_graphql():
             fyb: "${fyb}"
             fye: "${fye}"
             status: "${status}"
+            ctrl_type: "${ctrl_type}"
+            hosp_name: "${hosp_name}"
+            street_addr: "${street_addr}"
+            po_box: "${po_box}"
+            city: "${city}"
+            state: "${state}"
+            zip_code: "${zip_code}"
+            county: "${county}"
         }) {
             providerNumber
             fiscalYearBegin
             fiscalYearEnd
             status
+            hospitalName
+            streetAddress
+            poBox
+            city
+            state
+            zipCode
+            county
         }
     }
 """).substitute(data)
+
+        #'po_box', 'city', 'state', 'zip_code', 'county']
 
     result = execute_query(mutation_query, pent_context, graphql_schema)
     out_data = result.data
@@ -95,4 +112,11 @@ def test_hcris_row_graphql():
         'fiscalYearBegin': '2015-07-01',
         'fiscalYearEnd': '2016-06-30',
         'status': 'AS_SUBMITTED',
+        'hospitalName': 'SHANDS JACKSONVILLE MEDICAL CENTER',
+        'streetAddress': '655 WEST 8TH STREET',
+        'poBox': '',
+        'city': 'JACKSONVILLE',
+        'state': 'FL',
+        'zipCode': '32209',
+        'county': 'DUVAL',
     }
