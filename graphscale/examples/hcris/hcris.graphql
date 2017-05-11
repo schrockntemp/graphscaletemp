@@ -1,9 +1,11 @@
 type Hospital
     @generatePent {
     id: ID!
-    providerNumber: String!
+    providerNumber: Int!
+    fiscalYearBegin: Date!
 }
 
 input CreateHospitalInput {
     provider: String!
+    fyb: String!
 }

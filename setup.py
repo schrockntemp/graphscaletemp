@@ -78,6 +78,7 @@ setup(
         'six',
         'graphql-core',
         'redis',
+        'iso8601',
     #    'graphql-relay>=0.4.5',
     #    'promise>=2.0',
     ],

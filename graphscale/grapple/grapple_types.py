@@ -1,5 +1,8 @@
 from uuid import UUID
 
+import datetime
+import iso8601
+
 from graphql import (
     GraphQLField,
     GraphQLNonNull,
@@ -7,7 +10,10 @@ from graphql import (
     GraphQLList,
     GraphQLArgument,
     GraphQLObjectType,
+    GraphQLScalarType,
 )
+
+from graphql.language.ast import StringValue
 
 from graphscale.utils import param_check
 
@@ -50,3 +56,30 @@ def get_pent_genner(klass):
         obj_id = UUID(args['id'])
         return await klass.gen(context, obj_id)
     return genner
+
+def serialize_date(date):
+    return date.isoformat()
+
+def coerce_date(value):
+    if isinstance(value, datetime.date):
+        return value
+    if isinstance(value, datetime.datetime):
+        return datetime.date(value.year, value.month. value.day)
+    if isinstance(value, str):
+        return iso8601.parse_date(value) # let's see what we can do
+    return None # should I throw?
+
+def parse_date_literal(ast):
+    if isinstance(ast, StringValue):
+        return iso8601.parse_date(ast.value)
+
+class GraphQLDate(GrappleType):
+    @staticmethod
+    def create_type():
+        return GraphQLScalarType(
+            name='Date',
+            description='ISO-8601 Date',
+            serialize=serialize_date,
+            parse_value=coerce_date,
+            parse_literal=parse_date_literal
+    )

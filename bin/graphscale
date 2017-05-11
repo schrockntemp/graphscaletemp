@@ -46,6 +46,7 @@ from graphscale.grapple import (
     req,
     list_of,
     define_top_level_getter,
+    GraphQLDate,
 )
 """
 

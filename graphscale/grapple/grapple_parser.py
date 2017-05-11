@@ -106,6 +106,7 @@ def type_instantiation(type_string):
     lookup = {
         'String': 'GraphQLString',
         'Int': 'GraphQLInt',
+        'ID': 'GraphQLID',
     }
     if type_string in lookup:
         return lookup[type_string]

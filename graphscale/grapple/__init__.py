@@ -5,6 +5,7 @@ from .grapple_types import (
     list_of,
     req,
     define_top_level_getter,
+    GraphQLDate,
 )
 
 __all__ = [
@@ -12,5 +13,6 @@ __all__ = [
     'id_field',
     'list_of',
     'req',
-    'define_top_level_getter'
+    'define_top_level_getter',
+    'GraphQLDate'
 ]

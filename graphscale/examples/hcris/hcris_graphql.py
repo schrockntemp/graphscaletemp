@@ -21,7 +21,7 @@ def pent_map():
         'Hospital': Hospital,
     }
 
-def define_create_mutation(out_type, in_type, resolver):
+def define_create(out_type, in_type, resolver):
     return GraphQLField(
         type=out_type.type(),
         args={
@@ -41,7 +41,7 @@ def create_hcris_schema():
         mutation=GraphQLObjectType(
             name='Mutation',
             fields=lambda: {
-                'createHospital' : define_create_mutation(
+                'createHospital' : define_create(
                     GraphQLHospital,
                     GraphQLCreateHospitalInput,
                     create_hospital_resolver),
@@ -50,5 +50,5 @@ def create_hcris_schema():
     )
 
 async def create_hospital_resolver(_parent, args, context, *_):
-    hospital_input = CreateHospitalInput(provider=args['input']['provider'])
+    hospital_input = CreateHospitalInput(args['input'])
     return await create_hospital(context, hospital_input)

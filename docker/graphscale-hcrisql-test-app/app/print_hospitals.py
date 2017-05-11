@@ -40,9 +40,10 @@ async def do_it():
         'fyestr', 'status', 'ctrl_type', 'hosp_name', 'street_addr', 'po_box',
         'city', 'state', 'zip_code', 'county']
 
-    type_id = 100000 # original object
+    # type_id = 100000 # original object
 
-    kvetch = get_kvetch()
+    # kvetch = get_kvetch()
+    status_set = set()
     with open(filename, 'r') as csvfile:
         row_reader = csv.reader(csvfile, delimiter=',', quotechar='"')
         header = next(row_reader)
@@ -52,7 +53,8 @@ async def do_it():
 
         for data_row in row_reader:
             data = dict(zip(header, data_row))
-            # await kvetch.gen_insert_object(type_id, data)
-            # new_obj = await kvetch.gen_object(new_obj_id)
+            status_set.add(data['status'])
+
+    print(status_set)
 
 execute_gen(do_it())
