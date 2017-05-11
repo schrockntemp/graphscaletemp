@@ -50,3 +50,16 @@ def test_insert_get():
     query = '{ hospital(id: "%s") { providerNumber } }' % hospital_id
     result = execute_query(query, pent_context, graphql_schema)
     assert result.data['hospital']['providerNumber'] == '102020'
+
+
+def test_graphql_insert():
+    pent_context = mem_context()
+    graphql_schema = create_hcris_schema()
+    mutation_query = """
+mutation {
+    createHospital(input: { provider: "1234" } ) {
+        providerNumber
+    }
+}"""
+    result = execute_query(mutation_query, pent_context, graphql_schema)
+    assert result.data['createHospital']['providerNumber'] == '1234'

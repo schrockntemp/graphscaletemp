@@ -1,9 +1,15 @@
+from uuid import UUID
+
 from graphql import (
     GraphQLField,
     GraphQLNonNull,
     GraphQLID,
     GraphQLList,
+    GraphQLArgument,
+    GraphQLObjectType,
 )
+
+from graphscale.utils import param_check
 
 class GrappleType:
     _memo = {}
@@ -30,3 +36,17 @@ def req(ttype):
 
 def list_of(ttype):
     return GraphQLList(type=ttype)
+
+def define_top_level_getter(graphql_type, pent_type):
+    param_check(graphql_type, GraphQLObjectType, 'graphql_type')
+    return GraphQLField(
+        type=graphql_type,
+        args={'id': GraphQLArgument(type=GraphQLID)},
+        resolver=get_pent_genner(pent_type)
+    )
+
+def get_pent_genner(klass):
+    async def genner(_parent, args, context, *_):
+        obj_id = UUID(args['id'])
+        return await klass.gen(context, obj_id)
+    return genner

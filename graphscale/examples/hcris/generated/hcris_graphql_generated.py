@@ -19,7 +19,8 @@ from graphscale.grapple import (
     GrappleType,
     id_field,
     req,
-    list_of
+    list_of,
+    define_top_level_getter,
 )
 
 class GraphQLHospital(GrappleType):
@@ -34,3 +35,18 @@ class GraphQLHospital(GrappleType):
                 ),
             },
         )
+
+class GraphQLCreateHospitalInput(GrappleType):
+    @staticmethod
+    def create_type():
+        return GraphQLInputObjectType(
+            name='CreateHospitalInput',
+            fields=lambda: {
+                'provider': GraphQLInputObjectField(type=req(GraphQLString)),
+            },
+        )
+
+def generated_query_fields(pent_map):
+    return {
+        'hospital': define_top_level_getter(GraphQLHospital.type(), pent_map['Hospital']),
+    }

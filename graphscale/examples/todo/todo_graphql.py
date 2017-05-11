@@ -28,20 +28,8 @@ from graphscale.grapple.grapple_types import (
     id_field,
     req,
     list_of,
+    define_top_level_getter,
 )
-
-def get_pent_genner(klass):
-    async def genner(_parent, args, context, *_):
-        obj_id = UUID(args['id'])
-        return await klass.gen(context, obj_id)
-    return genner
-
-def define_top_level_getter(graphql_type, pent_type):
-    return GraphQLField(
-        type=graphql_type,
-        args={'id': GraphQLArgument(type=GraphQLString)},
-        resolver=get_pent_genner(pent_type)
-    )
 
 async def gen_todo_items(user, args, _context, *_):
     return await user.gen_todo_items(after=args.get('after'), first=args.get('first'))

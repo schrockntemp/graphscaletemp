@@ -4,6 +4,7 @@ from .grapple_types import (
     id_field,
     list_of,
     req,
+    define_top_level_getter,
 )
 
 __all__ = [
@@ -11,4 +12,5 @@ __all__ = [
     'id_field',
     'list_of',
     'req',
+    'define_top_level_getter'
 ]

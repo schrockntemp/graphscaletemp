@@ -1,4 +1,9 @@
-type Hospital @generatePent {
+type Hospital
+    @generatePent {
     id: ID!
     providerNumber: String!
-} 
+}
+
+input CreateHospitalInput {
+    provider: String!
+}

@@ -1,6 +1,11 @@
 #!/usr/local/bin/python3
 import click
-from graphscale.grapple.grapple_parser import parse_grapple, print_graphql_defs, print_grapple_pents
+from graphscale.grapple.grapple_parser import (
+    parse_grapple,
+    print_graphql_defs,
+    print_grapple_pents,
+    print_graphql_top_level,
+)
 
 @click.group()
 def cli():
@@ -28,6 +33,7 @@ from graphql import (
     GraphQLArgument,
     GraphQLList,
     GraphQLInt,
+    GraphQLInputField,
     GraphQLInputObjectType,
     GraphQLInputObjectField,
     GraphQLNonNull,
@@ -38,7 +44,8 @@ from graphscale.grapple import (
     GrappleType,
     id_field,
     req,
-    list_of
+    list_of,
+    define_top_level_getter,
 )
 """
 
@@ -51,6 +58,7 @@ def gengraphql(file):
     print(grapple_graphql_header())
     defs = print_graphql_defs(ast)
     print(defs)
+    print(print_graphql_top_level(ast))
 
 if __name__ == '__main__':
     cli.add_command(genpents)

@@ -2,19 +2,27 @@ import re
 
 from datetime import datetime
 from uuid import UUID
+from enum import Enum, auto
 
 from graphql.language.source import Source
 from graphql.language.parser import parse
-from graphql.language.ast import ObjectTypeDefinition, NamedType, NonNullType, ListType
+from graphql.language.ast import (
+    ObjectTypeDefinition,
+    NamedType,
+    NonNullType,
+    ListType,
+    InputObjectTypeDefinition,
+)
 
 from graphscale.utils import param_check
+
 
 def parse_grapple(grapple_string):
     ast = parse(Source(grapple_string))
     grapple_types = []
     for type_node in ast.definitions:
         grapple_types.append(create_grapple_type_definition(type_node))
-    return GrappleDocument(object_types=grapple_types)
+    return GrappleDocument(types=grapple_types)
 
 def print_grapple_pents(document_ast):
     writer = CodeWriter()
@@ -28,11 +36,54 @@ def print_graphql_defs(document_ast):
     writer = CodeWriter()
     for object_type in document_ast.object_types():
         print_graphql_object_type(writer, object_type)
+    for input_type in document_ast.input_types():
+        print_graphql_input_type(writer, input_type)
     return writer.result()
+
+def uncapitalized(string):
+    return string[0].lower() + string[1:]
+
+def print_graphql_top_level(document_ast):
+    writer = CodeWriter()
+    writer.line('def generated_query_fields(pent_map):')
+    writer.increase_indent() # function body
+    writer.line('return {')
+    writer.increase_indent() # dictionary body
+    for grapple_type in document_ast.object_types():
+        field_name = uncapitalized(grapple_type.name())
+        graphql_type_inst = 'GraphQL%s.type()' % grapple_type.name()
+        writer.line("'%s': define_top_level_getter(%s, pent_map['%s'])," %
+                    (field_name, graphql_type_inst, grapple_type.name()))
+    writer.decrease_indent() # end dictionary body
+    writer.line('}')
+    writer.decrease_indent() # end function body
+    writer.blank_line()
+    return writer.result()
+
+def print_graphql_input_type(writer, grapple_type):
+    writer.line('class GraphQL%s(GrappleType):' % grapple_type.name())
+    writer.increase_indent() # begin class definition
+    writer.line('@staticmethod')
+    writer.line('def create_type():')
+    writer.increase_indent() # begin create_type body
+    writer.line('return GraphQLInputObjectType(')
+    writer.increase_indent() # begin GraphQLInputObjectType .ctor args
+    writer.line("name='%s'," % grapple_type.name())
+    writer.line('fields=lambda: {')
+    writer.increase_indent() # begin field declarations
+    for field in grapple_type.fields():
+        print_graphql_input_field(writer, field)
+    writer.decrease_indent() # end field declarations
+    writer.line('},')
+    writer.decrease_indent() # end GraphQLInputObjectType .ctor args
+    writer.line(')')
+    writer.decrease_indent() # end create_type body
+    writer.decrease_indent() # end class definition
+    writer.blank_line()
 
 def print_graphql_object_type(writer, grapple_type):
     writer.line('class GraphQL%s(GrappleType):' % grapple_type.name())
-    writer.increase_indent()
+    writer.increase_indent() # begin class definition
     writer.line('@staticmethod')
     writer.line('def create_type():')
     writer.increase_indent() # begin create_type body
@@ -48,6 +99,7 @@ def print_graphql_object_type(writer, grapple_type):
     writer.decrease_indent() # end GraphQLObjectType .ctor args
     writer.line(')')
     writer.decrease_indent() # end create_type body
+    writer.decrease_indent() # end class definition
     writer.blank_line()
 
 def type_instantiation(type_string):
@@ -110,6 +162,10 @@ def print_graphql_field(writer, grapple_field):
     writer.decrease_indent() # end args to GraphQLField .ctor
     writer.line('),') # close GraphQLField .ctor
 
+def print_graphql_input_field(writer, grapple_field):
+    type_ref_str = type_ref_string(grapple_field.type_ref())
+    writer.line("'%s': GraphQLInputField(type=%s)," % (grapple_field.name(), type_ref_str))
+
 def graphql_type_to_python_type(graphql_type):
     scalars = {
         'ID' : UUID,
@@ -124,21 +180,41 @@ def graphql_type_to_python_type(graphql_type):
     return graphql_type
 
 class GrappleDocument:
-    def __init__(self, *, object_types):
-        self._object_types = object_types
+    def __init__(self, *, types):
+        self._types = types
 
     def object_types(self):
-        return self._object_types
+        return [t for t in self._types if t.is_object()]
+
+    def input_types(self):
+        return [t for t in self._types if t.is_input()]
+
+class TypeVarietal(Enum):
+    OBJECT = auto()
+    INPUT = auto()
 
 class GrappleTypeDefinition:
-    def __init__(self, *, name, fields, generate_pent):
+    def __init__(self, *, name, fields, generate_pent, type_varietal):
         self._name = name
         self._fields = fields
         self._generate_pent = generate_pent
+        self._type_varietal = type_varietal
 
     @staticmethod
     def object_type(*, name, fields, generate_pent):
-        return GrappleTypeDefinition(name=name, fields=fields, generate_pent=generate_pent)
+        return GrappleTypeDefinition(
+            name=name,
+            fields=fields,
+            generate_pent=generate_pent,
+            type_varietal=TypeVarietal.OBJECT)
+
+    @staticmethod
+    def input_type(*, name, fields):
+        return GrappleTypeDefinition(
+            name=name,
+            fields=fields,
+            generate_pent=False,
+            type_varietal=TypeVarietal.INPUT)
 
     def name(self):
         return self._name
@@ -148,6 +224,12 @@ class GrappleTypeDefinition:
 
     def generate_pent(self):
         return self._generate_pent
+
+    def is_object(self):
+        return self._type_varietal == TypeVarietal.OBJECT
+
+    def is_input(self):
+        return self._type_varietal == TypeVarietal.INPUT
 
 class GrappleField:
     def __init__(self, *, name, grapple_type_ref, args):
@@ -187,8 +269,19 @@ def has_generate_pent_directive(type_ast):
 def create_grapple_type_definition(type_ast):
     if isinstance(type_ast, ObjectTypeDefinition):
         return create_grapple_object_type(type_ast)
+    elif isinstance(type_ast, InputObjectTypeDefinition):
+        return create_grapple_input_type(type_ast)
     else:
         raise Exception('node not supported: ' + str(type_ast))
+
+
+def create_grapple_input_type(input_type_ast):
+    grapple_type_name = input_type_ast.name.value
+    grapple_fields = [create_grapple_input_field(field) for field in input_type_ast.fields]
+    return GrappleTypeDefinition.input_type(
+        name=grapple_type_name,
+        fields=grapple_fields,
+    )
 
 def create_grapple_object_type(object_type_ast):
     grapple_type_name = object_type_ast.name.value
@@ -204,8 +297,8 @@ def to_snake_case(camel_case):
     with_underscores = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', camel_case)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', with_underscores).lower()
 
-def is_camel_case(str):
-    return re.search('[A-Z]', str)
+def is_camel_case(string):
+    return re.search('[A-Z]', string)
 
 class GrappleFieldArgument:
     def __init__(self, *, name, type_ref):
@@ -224,6 +317,13 @@ def create_grapple_field_arg(graphql_arg):
     return GrappleFieldArgument(
         name=graphql_arg.name.value,
         type_ref=create_grapple_type_ref(graphql_arg.type),
+    )
+
+def create_grapple_input_field(graphql_field):
+    return GrappleField(
+        name=graphql_field.name.value,
+        grapple_type_ref=create_grapple_type_ref(graphql_field.type),
+        args=[],
     )
 
 def create_grapple_field(graphql_field):
