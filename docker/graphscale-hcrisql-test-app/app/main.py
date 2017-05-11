@@ -1,17 +1,19 @@
+#pylint: disable=C0103
+
 import asyncio
 
 from flask import Flask
 
-from graphscale.utils import param_check, execute_gen
+import pymysql
+
+from graphql.execution.executors.asyncio import AsyncioExecutor
 
 from graphscale.kvetch.kvetch import Kvetch
-
-from graphql import graphql
 
 from graphscale.kvetch.kvetch_dbshard import (
     KvetchDbShard,
     KvetchDbSingleConnectionPool,
-    KvetchDbEdgeDefinition,
+    # KvetchDbEdgeDefinition,
 )
 
 from graphscale.pent.pent import (
@@ -25,21 +27,7 @@ from graphscale.examples.hcris.hcris_pent import (
 from graphscale.examples.hcris.hcris_graphql import (
     create_hcris_schema
 )
-
-import pymysql
-
-# from examples.todo.todo_pents import (
-#     create_todo_user,
-#     TodoUserInput,
-#     TodoUser,
-#     get_todo_config,
-# )
-
-# from examples.todo.todo_graphql import create_todo_schema
-
-# from test.test_utils import MagnusConn
-
-from graphql.execution.executors.asyncio import AsyncioExecutor
+# from graphscale.utils import param_check, execute_gen
 
 from flask_graphql import GraphQLView
 
@@ -72,32 +60,23 @@ app = Flask(__name__)
 
 outer_loop = asyncio.new_event_loop()
 executor = AsyncioExecutor(loop=outer_loop)
-app.add_url_rule('/graphql', 
+app.add_url_rule(
+    '/graphql',
     view_func=GraphQLView.as_view(
-        'graphql', 
-        schema=create_hcris_schema(), 
-        graphiql=True, 
+        'graphql',
+        schema=create_hcris_schema(),
+        graphiql=True,
         executor=executor,
         context=create_pent_context(),
         request=create_pent_context(),
-    )
+    ),
 )
-
 
 @app.route("/")
 def hello():
-    # query = '{ user(id: "%s") { id, name } }' % user_id
-    # pent_context = create_pent_context()
-    # loop = asyncio.new_event_loop()
-    # result = graphql(
-    #     create_todo_schema(),
-    #     query,
-    #     executor=AsyncioExecutor(loop=loop),
-    #     context_value=pent_context
-    # )
     return """
     Goto http://localhost:8080/graphql
-    """ 
+    """
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=True, port=8080)
