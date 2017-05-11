@@ -80,7 +80,7 @@ class RegexRule:
 
 def is_int(value, base=10, val=None):
     try:
-        return int(value, base)
+        return int(value, base) is not None # zero should return true
     except ValueError:
         return val
 
@@ -107,8 +107,7 @@ def is_weird_alpha_date(value):
                   'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'])
     if not month in months:
         return False
-
-    return is_int(year) and int(year) > 0 and int(year) <= 99
+    return is_int(year) and int(year) >= 0 and int(year) <= 99
 
 
 class ColumnTracker:
@@ -153,6 +152,11 @@ def do_analysis(args):
             num_rows += 1
             data = dict(zip(column_names, data_row))
             for key, value in data.items():
+                # debugging example
+                # if key == 'fybstr':
+                #     if not is_weird_alpha_date(value):
+                #         print('NOT')
+                #         print(value)
                 trackers[key].process_value(value)
 
     print('Rows: ' + str(num_rows))
