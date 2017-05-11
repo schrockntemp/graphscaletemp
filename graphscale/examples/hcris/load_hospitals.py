@@ -9,10 +9,10 @@ from graphscale.kvetch.kvetch_dbshard import (
     KvetchDbShard,
     KvetchDbSingleConnectionPool,
 )
-# from graphscale.kvetch.kvetch_dbschema import (
-#     init_shard_db_tables,
-#     drop_shard_db_tables,
-# )
+from graphscale.kvetch.kvetch_dbschema import (
+    init_shard_db_tables,
+    drop_shard_db_tables,
+)
 
 from graphscale.utils import execute_gen
 
@@ -29,8 +29,8 @@ def get_kvetch():
         pool=KvetchDbSingleConnectionPool(hcrisql_conn),
     )]
 
-    # drop_shard_db_tables(shards[0], {})
-    # init_shard_db_tables(shards[0], {})
+    drop_shard_db_tables(shards[0], {})
+    init_shard_db_tables(shards[0], {})
     return Kvetch(shards=shards, edges=[], indexes=[])
 
 async def do_it():
@@ -40,10 +40,9 @@ async def do_it():
         'fyestr', 'status', 'ctrl_type', 'hosp_name', 'street_addr', 'po_box',
         'city', 'state', 'zip_code', 'county']
 
-    # type_id = 100000 # original object
+    type_id = 100000 # original object
 
-    # kvetch = get_kvetch()
-    status_set = set()
+    kvetch = get_kvetch()
     with open(filename, 'r') as csvfile:
         row_reader = csv.reader(csvfile, delimiter=',', quotechar='"')
         header = next(row_reader)
@@ -53,8 +52,7 @@ async def do_it():
 
         for data_row in row_reader:
             data = dict(zip(header, data_row))
-            status_set.add(data['status'])
-
-    print(status_set)
+            out_thing = await kvetch.gen_insert_object(type_id, data)
+            print(out_thing)
 
 execute_gen(do_it())

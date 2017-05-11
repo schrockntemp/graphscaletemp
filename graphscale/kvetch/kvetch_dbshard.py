@@ -1,9 +1,8 @@
 from datetime import datetime
 from uuid import UUID
+from collections import OrderedDict
 
 from pymysql.connections import Connection
- 
-from collections import OrderedDict
 
 from graphscale.utils import param_check
 
@@ -156,7 +155,7 @@ def _kv_shard_get_objects(shard_conn, ids):
 
     ids_out = [UUID(bytes=row['obj_id']) for row in rows]
     obj_list = [row_to_obj(row) for row in rows]
-    return dict(zip(ids_out, obj_list))
+    return OrderedDict(zip(ids_out, obj_list))
 
 def _kv_shard_insert_object(shard_conn, new_id, type_id, data):
     with shard_conn.cursor() as cursor:

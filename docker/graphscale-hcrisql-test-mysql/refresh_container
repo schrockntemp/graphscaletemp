@@ -1,0 +1,4 @@
+docker rm -f graphscale-hcrisql-test-mysql-container
+docker build -t graphscale-hcrisql-test-mysql-image .
+docker run --name graphscale-hcrisql-test-mysql-container -p 3306:3306 -d graphscale-hcrisql-test-mysql-image
+

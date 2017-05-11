@@ -18,6 +18,16 @@ from graphscale.pent.pent import (
     PentContext
 )
 
+from graphscale.examples.hcris.hcris_pent import (
+    get_hcris_config
+)
+
+from graphscale.examples.hcris.hcris_graphql import (
+    create_hcris_schema
+)
+
+import pymysql
+
 # from examples.todo.todo_pents import (
 #     create_todo_user,
 #     TodoUserInput,
@@ -31,47 +41,52 @@ from graphscale.pent.pent import (
 
 from graphql.execution.executors.asyncio import AsyncioExecutor
 
-# from flask_graphql import GraphQLView
+from flask_graphql import GraphQLView
 
+def get_kvetch():
+    hcrisql_conn = pymysql.connect(
+        host='localhost',
+        user='magnus',
+        password='magnus',
+        db='graphscale-hcrisql-db',
+        charset='utf8mb4',
+        cursorclass=pymysql.cursors.DictCursor)
 
-# def create_pent_context():
-#     edges = [KvetchDbEdgeDefinition(
-#         edge_name='user_to_todo_edge',
-#         edge_id=9283,
-#         from_id_attr='user_id')]
-# 
-#     pool = KvetchDbSingleConnectionPool(MagnusConn.get_unittest_conn())
-#     shard = KvetchDbShard(pool=pool)
-#     pent_context = PentContext(
-#         config=get_todo_config(),
-#         kvetch=Kvetch(shards=[shard], edges=edges, indexes=[]),
-#     )
-#     return pent_context
+    shards = [KvetchDbShard(
+        pool=KvetchDbSingleConnectionPool(hcrisql_conn),
+    )]
+
+    # drop_shard_db_tables(shards[0], {})
+    # init_shard_db_tables(shards[0], {})
+    return Kvetch(shards=shards, edges=[], indexes=[])
+
+def create_pent_context():
+    kvetch = get_kvetch()
+    pent_context = PentContext(
+        config=get_hcris_config(),
+        kvetch=kvetch,
+    )
+    return pent_context
 
 app = Flask(__name__)
 
-# outer_loop = asyncio.new_event_loop()
-# executor = AsyncioExecutor(loop=outer_loop)
-# app.add_url_rule('/graphql', 
-#     view_func=GraphQLView.as_view(
-#         'graphql', 
-#         schema=create_todo_schema(), 
-#         graphiql=True, 
-#         executor=executor,
-#         context=create_pent_context(),
-#         request=create_pent_context(),
-#     )
-# )
+outer_loop = asyncio.new_event_loop()
+executor = AsyncioExecutor(loop=outer_loop)
+app.add_url_rule('/graphql', 
+    view_func=GraphQLView.as_view(
+        'graphql', 
+        schema=create_hcris_schema(), 
+        graphiql=True, 
+        executor=executor,
+        context=create_pent_context(),
+        request=create_pent_context(),
+    )
+)
 
-async def gen_main():
-    return 'foobar'
-    # pent_context = create_pent_context()
-    # user = await create_todo_user(pent_context, TodoUserInput(name='Joe'))
-    # return user
 
 @app.route("/")
 def hello():
-    foo = execute_gen(gen_main())
+    print('DOES THIS WORK')
     # query = '{ user(id: "%s") { id, name } }' % user_id
     # pent_context = create_pent_context()
     # loop = asyncio.new_event_loop()
@@ -82,9 +97,8 @@ def hello():
     #     context_value=pent_context
     # )
     return """
-    Passed param check
-    Another changed Hello World from Flask using Python 3.5
-    """ + foo 
+    Goto http://localhost:8080/graphql
+    """ 
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=True, port=8080)
