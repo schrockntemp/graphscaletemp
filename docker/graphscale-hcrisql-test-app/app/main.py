@@ -86,7 +86,6 @@ app.add_url_rule('/graphql',
 
 @app.route("/")
 def hello():
-    print('DOES THIS WORK')
     # query = '{ user(id: "%s") { id, name } }' % user_id
     # pent_context = create_pent_context()
     # loop = asyncio.new_event_loop()

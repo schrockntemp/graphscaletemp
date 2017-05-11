@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from graphql import(
     GraphQLSchema,
     GraphQLObjectType,
@@ -63,6 +65,6 @@ async def create_hospital_resolver(_parent, args, context, *_):
     return await create_hospital(context, hospital_input)
 
 async def all_hospitals_resolver(_parent, args, context, *_):
-    after = args.get('after')
+    after = UUID(args.get('after'))
     first = args.get('first')
     return await Hospital.gen_all(context, after, first)
