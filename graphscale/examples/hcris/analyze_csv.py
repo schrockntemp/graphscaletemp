@@ -43,7 +43,7 @@ class FixedLengthRule:
 
     @property
     def description(self):
-        return 'Fixed Length: ' + str(self.length)
+        return 'Has Fixed Length: ' + str(self.length)
 
 class DefinedSetRule:
     def __init__(self):
@@ -59,7 +59,7 @@ class DefinedSetRule:
 
     @property
     def description(self):
-        return 'Defined Set: ' + str(sorted(list(self.values)))
+        return 'Has Defined Set Of Values: ' + str(sorted(list(self.values)))
 
 class RegexRule:
     def __init__(self, pattern, description):
@@ -78,20 +78,32 @@ class RegexRule:
     def description(self):
         return self._description
 
-def is_int(value, base=10, val=None):
+def is_int(value, base=10):
     try:
         return int(value, base) is not None # zero should return true
     except ValueError:
-        return val
+        return False
+
+def is_float(value):
+    try:
+        return float(value) is not None # zero should return true
+    except ValueError:
+        return False
+
+def float_rule():
+    return AllPassFilterRule(is_float, 'Can Treat As Float')
 
 def int_rule():
-    return AllPassFilterRule(is_int, 'Int')
+    return AllPassFilterRule(is_int, 'Can Treat As Int')
+
+def no_nulls_rule():
+    return AllPassFilterRule(lambda value: value, 'No Nulls In Any Rows')
 
 def has_nulls_rule():
-    return OnePassFilterRule(lambda value: not value, 'Has Nulls')
+    return OnePassFilterRule(lambda value: not value, 'Has Some Nulls in Rows')
 
 def all_nulls_rules():
-    return AllPassFilterRule(lambda value: not value, 'All Nulls')
+    return AllPassFilterRule(lambda value: not value, 'All Nulls in All Rows')
 
 def is_weird_alpha_date(value):
     parts = value.split('-')
@@ -117,9 +129,11 @@ class ColumnTracker:
         self.values = set()
 
         self.rules = [
+            no_nulls_rule(),
             has_nulls_rule(),
             all_nulls_rules(),
             int_rule(),
+            float_rule(),
             FixedLengthRule(),
             DefinedSetRule(),
             AllPassFilterRule(is_weird_alpha_date, 'Weird Alpha Data e.g. 01-OCT-15'),
@@ -149,14 +163,18 @@ def do_analysis(args):
         column_names = next(row_reader)
         trackers = {column_name: ColumnTracker(column_name) for column_name in column_names}
         for data_row in row_reader:
+            # if (num_rows > 10000):
+            #     break
             num_rows += 1
             data = dict(zip(column_names, data_row))
             for key, value in data.items():
                 # debugging example
-                # if key == 'fybstr':
-                #     if not is_weird_alpha_date(value):
+                # if key == 'itm_val_num':
+                #     if not is_int(value):
+                #         print(int(value))
                 #         print('NOT')
-                #         print(value)
+                #         print('"%s"' % value)
+                #         return
                 trackers[key].process_value(value)
 
     print('Rows: ' + str(num_rows))
