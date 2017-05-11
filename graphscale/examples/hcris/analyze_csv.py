@@ -163,8 +163,6 @@ def do_analysis(args):
         column_names = next(row_reader)
         trackers = {column_name: ColumnTracker(column_name) for column_name in column_names}
         for data_row in row_reader:
-            # if (num_rows > 10000):
-            #     break
             num_rows += 1
             data = dict(zip(column_names, data_row))
             for key, value in data.items():
