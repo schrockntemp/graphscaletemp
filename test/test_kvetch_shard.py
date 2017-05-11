@@ -22,6 +22,7 @@ from graphscale.kvetch.sync import (
     sync_kv_get_edge_ids,
     sync_kv_update_object,
     sync_kv_delete_object,
+    sync_kv_get_objects_of_type,
 )
 
 from graphscale.kvetch.kvetch_memshard import (
@@ -163,6 +164,94 @@ def test_delete_object(only_shard):
     assert sync_kv_get_object(shard, id_one)['num'] == 4
     sync_kv_delete_object(shard, id_one)
     assert sync_kv_get_object(shard, id_one) is None
+
+def get_sorted_ids(num):
+    ids = []
+    for i in range(0, num):
+        ids.append(uuid4())
+    return tuple(sorted(ids))
+
+def test_get_objects_of_type(only_shard):
+    shard = only_shard
+    id_one, id_two, id_three, id_four = get_sorted_ids(4)
+    sync_kv_insert_object(shard, id_one, 1000, {'num': 5})
+    sync_kv_insert_object(shard, id_two, 1000, {'num': 6})
+    sync_kv_insert_object(shard, id_three, 1000, {'num': 7})
+    sync_kv_insert_object(shard, id_four, 1001, {'num': 8})
+    ids_out_1000 = [obj_id for obj_id in sync_kv_get_objects_of_type(shard, 1000).keys()]
+    assert ids_out_1000 == [id_one, id_two, id_three]
+    datas_out_1000 = [obj for obj in sync_kv_get_objects_of_type(shard, 1000).values()]
+    assert [data['num'] for data in datas_out_1000] == [5, 6, 7]
+    ids_out_1001 = [obj_id for obj_id in sync_kv_get_objects_of_type(shard, 1001).keys()]
+    assert ids_out_1001 == [id_four]
+    datas_out_1001 = [obj for obj in sync_kv_get_objects_of_type(shard, 1001).values()]
+    assert [data['num'] for data in datas_out_1001] == [8]
+
+def test_objects_of_type_first(only_shard):
+    shard = only_shard
+    id_one, id_two, id_three, id_four = get_sorted_ids(4)
+    sync_kv_insert_object(shard, id_one, 1000, {'num': 5})
+    sync_kv_insert_object(shard, id_two, 1000, {'num': 6})
+    sync_kv_insert_object(shard, id_three, 1000, {'num': 7})
+    sync_kv_insert_object(shard, id_four, 1001, {'num': 8})
+
+    first_one_objs = sync_kv_get_objects_of_type(shard, 1000, after=None, first=1)
+    assert list(first_one_objs.keys()) == [id_one]
+
+    first_two_objs = sync_kv_get_objects_of_type(shard, 1000, after=None, first=2)
+    assert list(first_two_objs.keys()) == [id_one, id_two]
+
+    first_three_objs = sync_kv_get_objects_of_type(shard, 1000, after=None, first=3)
+    assert list(first_three_objs.keys()) == [id_one, id_two, id_three]
+
+def test_objects_of_type_after(only_shard):
+    shard = only_shard
+    id_before, id_one, id_gap, id_two, id_three, id_four, id_off_end = get_sorted_ids(7)
+
+    sync_kv_insert_object(shard, id_one, 1000, {'num': 5})
+    sync_kv_insert_object(shard, id_two, 1000, {'num': 6})
+    sync_kv_insert_object(shard, id_three, 1000, {'num': 7})
+    sync_kv_insert_object(shard, id_four, 1001, {'num': 8})
+
+    after_id_before_objs = sync_kv_get_objects_of_type(shard, 1000, after=id_before)
+    assert list(after_id_before_objs.keys()) == [id_one, id_two, id_three]
+
+    after_one_objs = sync_kv_get_objects_of_type(shard, 1000, after=id_one)
+    assert list(after_one_objs.keys()) == [id_two, id_three]
+
+    after_gap_objs = sync_kv_get_objects_of_type(shard, 1000, after=id_gap)
+    assert list(after_gap_objs.keys()) == [id_two, id_three]
+
+    after_two_objs = sync_kv_get_objects_of_type(shard, 1000, after=id_two)
+    assert list(after_two_objs.keys()) == [id_three]
+
+    after_three_objs = sync_kv_get_objects_of_type(shard, 1000, after=id_three)
+    assert list(after_three_objs.keys()) == []
+
+    after_end_objs = sync_kv_get_objects_of_type(shard, 1000, after=id_off_end)
+    assert list(after_end_objs.keys()) == []
+
+
+def test_objects_of_type_after_first(only_shard):
+    shard = only_shard
+    id_before, id_one, id_gap, id_two, id_three, id_four =  get_sorted_ids(6)
+
+    sync_kv_insert_object(shard, id_one, 1000, {'num': 5})
+    sync_kv_insert_object(shard, id_two, 1000, {'num': 6})
+    sync_kv_insert_object(shard, id_three, 1000, {'num': 7})
+    sync_kv_insert_object(shard, id_four, 1001, {'num': 8})
+
+    after_before_first_one_objs = sync_kv_get_objects_of_type(shard, 1000, after=id_before, first=1)
+    assert list(after_before_first_one_objs.keys()) == [id_one]
+
+    after_before_first_two_objs = sync_kv_get_objects_of_type(shard, 1000, after=id_before, first=2)
+    assert list(after_before_first_two_objs.keys()) == [id_one, id_two]
+
+    after_one_first_one_objs = sync_kv_get_objects_of_type(shard, 1000, after=id_one, first=1)
+    assert list(after_one_first_one_objs.keys()) == [id_two]
+
+    after_gap_first_one_objs = sync_kv_get_objects_of_type(shard, 1000, after=id_gap, first=1)
+    assert list(after_gap_first_one_objs.keys()) == [id_two]
 
 def test_get_zero_objects(only_shard):
     with pytest.raises(ValueError):

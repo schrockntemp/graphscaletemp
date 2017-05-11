@@ -6,10 +6,11 @@ from graphql import(
     GraphQLInputObjectField,
     GraphQLString,
     GraphQLArgument,
-    # GraphQLID,
+    GraphQLID,
+    GraphQLInt,
 )
 
-from graphscale.grapple import GrappleType, req
+from graphscale.grapple import GrappleType, req, list_of
 
 from .generated.hcris_graphql_generated import GraphQLHospital, GraphQLCreateHospitalInput
 from .generated.hcris_graphql_generated import generated_query_fields
@@ -35,6 +36,14 @@ def create_hcris_schema():
         query=GraphQLObjectType(
             name='Query',
             fields=lambda: {**generated_query_fields(pent_map()), **{
+                'allHospitals': GraphQLField(
+                    type=req(list_of(req(GraphQLHospital.type()))),
+                    args={
+                        'after': GraphQLArgument(type=GraphQLID),
+                        'first': GraphQLArgument(type=GraphQLInt),
+                    },
+                    resolver=all_hospitals_resolver,
+                ),
                 # custom fields go here
             }},
         ),
@@ -52,3 +61,6 @@ def create_hcris_schema():
 async def create_hospital_resolver(_parent, args, context, *_):
     hospital_input = CreateHospitalInput(args['input'])
     return await create_hospital(context, hospital_input)
+
+async def all_hospitals_resolver(_parent, args, context, *_):
+    pass

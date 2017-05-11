@@ -21,6 +21,10 @@ def sync_kv_get_objects(shard, ids):
     param_check(shard, KvetchShard, 'shard')
     return execute_gen(shard.gen_objects(ids))
 
+def sync_kv_get_objects_of_type(shard, type_id, after=None, first=None):
+    param_check(shard, KvetchShard, 'shard')
+    return execute_gen(shard.gen_objects_of_type(type_id, after, first))
+
 def sync_kv_insert_index_entry(shard, index_name, index_value, target_id):
     param_check(shard, KvetchShard, 'shard')
     return execute_gen(shard.gen_insert_index_entry(index_name, index_value, target_id))

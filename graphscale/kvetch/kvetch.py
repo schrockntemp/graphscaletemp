@@ -131,6 +131,13 @@ class Kvetch:
                 results[obj_id] = obj
         return results
 
+    async def gen_objects_of_type(self, type_id, after=None, first=None):
+        if len(self._shards) > 1:
+            raise Exception('shards > 1 currently not supported')
+
+        shard = self._shards[0]
+        return await shard.gen_objects_of_type(type_id, after, first)
+
     async def gen_edges(self, edge_definition, from_id, after=None, first=None):
         shard = self.get_shard_from_obj_id(from_id)
         return await shard.gen_edges(edge_definition, from_id, after=after, first=first)

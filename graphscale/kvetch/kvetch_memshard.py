@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 from functools import cmp_to_key
+from collections import OrderedDict
 
 from graphscale.utils import param_check
 
@@ -47,6 +48,26 @@ class KvetchMemShard(KvetchShard):
         if not ids:
             raise ValueError('ids must have at least 1 element')
         return {obj_id: self._objects.get(obj_id) for obj_id in ids}
+
+    async def gen_objects_of_type(self, type_id, after=None, first=None):
+        objs = {}
+        for obj_id, obj in self._objects.items():
+            if obj['type_id'] == type_id:
+                objs[obj_id] = obj
+
+        tuple_list = sorted(objs.items(), key=lambda t: t[0])
+
+        if after:
+            index = 0
+            for obj_id, _obj in tuple_list:
+                if after >= obj_id:
+                    index += 1
+            tuple_list = tuple_list[index:]
+
+        if first:
+            tuple_list = tuple_list[:first]
+
+        return OrderedDict(tuple_list)
 
     async def gen_insert_index_entry(self, index, index_value, target_id):
         index_name = index.index_name()
@@ -106,7 +127,7 @@ class KvetchMemShard(KvetchShard):
 
         edge_name = edge_definition.edge_name()
         if edge_name not in self._all_edges:
-            self._all_edges[edge_name] = {}
+            self._all_edges[edge_name] = OrderedDict()
 
         now = datetime.now()
         edge_entry = {

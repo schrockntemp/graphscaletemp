@@ -187,3 +187,23 @@ async def test_single_index_kvetch(single_index_kvetch):
 
     result_from_3 = await kvetch.gen_from_index(num_index, 3)
     assert set(ids_with_3) == set(result_from_3)
+
+@pytest.mark.asyncio
+async def test_single_shard_gen_objects_of_type():
+    kvetch = single_shard_no_index()
+    type_id = 2345
+
+    id_one, id_two, id_three = tuple(sorted([
+        await kvetch.gen_insert_object(type_id, {'num': 5}),
+        await kvetch.gen_insert_object(type_id, {'num': 6}),
+        await kvetch.gen_insert_object(type_id, {'num': 7}),
+    ]))
+
+    all_objs = await kvetch.gen_objects_of_type(type_id)
+    assert list(all_objs.keys()) == [id_one, id_two, id_three]
+
+    all_objs_after_one = await kvetch.gen_objects_of_type(type_id, after=id_one)
+    assert list(all_objs_after_one.keys()) == [id_two, id_three]
+
+    all_objs_after_one_first_one = await kvetch.gen_objects_of_type(type_id, after=id_one, first=1)
+    assert list(all_objs_after_one_first_one.keys()) == [id_two]
