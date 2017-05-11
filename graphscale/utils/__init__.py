@@ -1,11 +1,14 @@
 import asyncio
+import traceback
 
 def param_check(obj, ttype, param):
+    stack_str = ''.join(traceback.format_stack())
     if not isinstance(obj, ttype):
         if obj == id:
             raise ValueError("obj is id. typo?")
         raise ValueError('Param %s is not a %s. It is a %s. Value: %s'
-                         % (param, ttype.__name__, type(param).__name__, str(obj)))
+                         % (param, ttype.__name__, type(param).__name__, str(obj)) +
+                         ' Stack: ' + stack_str)
 
 def execute_gen(gen):
     loop = asyncio.new_event_loop()

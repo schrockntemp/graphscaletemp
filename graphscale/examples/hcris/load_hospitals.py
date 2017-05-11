@@ -8,6 +8,7 @@ from graphscale.kvetch.kvetch import Kvetch
 from graphscale.kvetch.kvetch_dbshard import (
     KvetchDbShard,
     KvetchDbSingleConnectionPool,
+    KvetchDbIndexDefinition,
 )
 from graphscale.kvetch.kvetch_dbschema import (
     init_shard_db_tables,
@@ -29,11 +30,16 @@ def get_kvetch():
         pool=KvetchDbSingleConnectionPool(hcrisql_conn),
     )]
 
+    index = KvetchDbIndexDefinition(
+        indexed_attr='provider',
+        indexed_sql_type='CHAR(255)',
+        index_name='provider_index',
+    )
     drop_shard_db_tables(shards[0], {})
     init_shard_db_tables(shards[0], {})
-    return Kvetch(shards=shards, edges=[], indexes=[])
+    return Kvetch(shards=shards, edges=[], indexes=[index])
 
-async def do_it():
+async def load_objects():
     filename = sys.argv[1]
     expected_header = [
         'provider', 'prvdr_num', 'fyb', 'fybstr', 'fye',
@@ -52,7 +58,15 @@ async def do_it():
 
         for data_row in row_reader:
             data = dict(zip(header, data_row))
-            out_thing = await kvetch.gen_insert_object(type_id, data)
-            print(out_thing)
+            new_id = await kvetch.gen_insert_object(type_id, data)
+            print('inserted ' + str(new_id))
 
-execute_gen(do_it())
+async def test_index_lookup():
+    kvetch = get_kvetch()
+    index = kvetch.get_index('provider_index')
+    objs = await kvetch.gen_from_index(index, '100002')
+    print(objs)
+
+if __name__ == '__main__':
+    execute_gen(load_objects())
+    # execute_gen(test_index_lookup())

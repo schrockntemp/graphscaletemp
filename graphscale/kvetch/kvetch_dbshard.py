@@ -244,13 +244,17 @@ def _kv_shard_get_edges(shard_conn, edge_id, from_id, after, first):
     return edges
 
 def _kv_shard_get_index_entries(shard_conn, index_name, index_column, index_value, target_column):
-    sql = 'SELECT %s FROM %s WHERE %s =' % (target_column, index_name, index_column)
+    sql = 'SELECT %s FROM %s WHERE %s = ' % (target_column, index_name, index_column)
     sql += '%s'
     sql += ' ORDER BY %s' % target_column
+    # print(sql)
+    # print(type(index_value))
     rows = []
     with shard_conn.cursor() as cursor:
         cursor.execute(sql, (_to_sql_value(index_value)))
         rows = cursor.fetchall()
+        # print('rows')
+        # print(rows)
 
     for row in rows:
         row['target_id'] = UUID(bytes=row['target_id'])

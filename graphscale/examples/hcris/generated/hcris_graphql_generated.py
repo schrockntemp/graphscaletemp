@@ -74,6 +74,10 @@ class GraphQLHospital(GrappleType):
                 ),
                 'county': GraphQLField(type=req(GraphQLString)),
             },
+            description="""
+This is a hospital as described in the csv file located here: http://www.nber.org/data/hcris.html
+See the table called "Cost Report" and see "Hospital Provider ID Info". The data comes from the "CSV" link 
+            """,
         )
 
 class GraphQLCreateHospitalInput(GrappleType):

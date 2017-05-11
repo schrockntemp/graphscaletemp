@@ -14,6 +14,11 @@ from graphscale.kvetch.kvetch_dbshard import (
     KvetchDbShard,
     KvetchDbSingleConnectionPool,
     # KvetchDbEdgeDefinition,
+    KvetchDbIndexDefinition,
+)
+
+from graphscale.kvetch.kvetch_dbschema import (
+    init_shard_db_tables
 )
 
 from graphscale.pent.pent import (
@@ -44,9 +49,17 @@ def get_kvetch():
         pool=KvetchDbSingleConnectionPool(hcrisql_conn),
     )]
 
+    index = KvetchDbIndexDefinition(
+        indexed_attr='provider',
+        indexed_sql_type='CHAR(255)',
+        index_name='provider_index',
+    )
+
     # drop_shard_db_tables(shards[0], {})
-    # init_shard_db_tables(shards[0], {})
-    return Kvetch(shards=shards, edges=[], indexes=[])
+    init_shard_db_tables(shards[0], {
+        'provider_index': index
+    })
+    return Kvetch(shards=shards, edges=[], indexes=[index])
 
 def create_pent_context():
     kvetch = get_kvetch()
@@ -68,7 +81,6 @@ app.add_url_rule(
         graphiql=True,
         executor=executor,
         context=create_pent_context(),
-        request=create_pent_context(),
     ),
 )
 

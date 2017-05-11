@@ -20,7 +20,7 @@ def create_kvetch_index_table_sql(index_column, index_sql_type, target_column, i
     param_check(index_name, str, 'index_name')
 
     # something is up here. the two indexing keys (not updated) should be unique
-    return """CREATE TABLE %s (
+    return """CREATE TABLE IF NOT EXISTS %s (
     row_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     %s %s NOT NULL,
     %s BINARY(16) NOT NULL,

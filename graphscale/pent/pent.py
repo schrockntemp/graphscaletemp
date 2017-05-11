@@ -78,7 +78,12 @@ class Pent:
         if cls == Pent:
             return await load_pent(context, obj_id)
 
+        import sys
+        sys.stderr.write('WORKS\n')
         data = await context.kvetch().gen_object(obj_id)
+        if data is None:
+            return None
+        sys.stderr.write(str(data)+'\n')
         return safe_create(context, obj_id, cls, data)
 
     @classmethod
