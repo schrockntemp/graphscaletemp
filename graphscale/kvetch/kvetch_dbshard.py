@@ -2,6 +2,8 @@ from datetime import datetime
 from uuid import UUID
 
 from pymysql.connections import Connection
+ 
+from collections import OrderedDict
 
 from graphscale.utils import param_check
 
@@ -61,6 +63,10 @@ class KvetchDbShard(KvetchShard):
             raise ValueError('ids must have at least 1 element')
         return _kv_shard_get_objects(self.conn(), ids)
 
+    async def gen_objects_of_type(self, type_id, after=None, first=None):
+        param_check(type_id, int, 'type_id')
+        return _kv_shard_get_objects_by_type(self.conn(), type_id, after, first)
+
     async def gen_insert_index_entry(self, index, index_value, target_id):
         attr = index.indexed_attr()
         _kv_shard_insert_index_entry(
@@ -114,6 +120,28 @@ class KvetchDbShard(KvetchShard):
             target_column='target_id',
         )
 
+def _kv_shard_get_objects_by_type(shard_conn, type_id, after=None, first=None):
+    sql = 'SELECT obj_id, type_id, body FROM kvetch_objects WHERE type_id = %s'
+
+    params = [type_id]
+
+    if after:
+        sql += ' AND obj_id > %s'
+        params.append(after.bytes)
+
+    sql += ' ORDER BY obj_id'
+
+    if first:
+        sql += ' LIMIT %s'
+        params.append(first)
+
+    with shard_conn.cursor() as cursor:
+        cursor.execute(sql, tuple(params))
+        rows = cursor.fetchall()
+
+    ids_out = [UUID(bytes=row['obj_id']) for row in rows]
+    obj_list = [row_to_obj(row) for row in rows]
+    return OrderedDict(zip(ids_out, obj_list))
 
 def _kv_shard_get_object(shard_conn, obj_id):
     obj_dict = _kv_shard_get_objects(shard_conn, [obj_id])

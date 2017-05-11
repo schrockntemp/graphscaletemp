@@ -88,6 +88,15 @@ class Pent:
         data_list = await context.kvetch().gen_objects(ids)
         return [safe_create(context, data['obj_id'], cls, data) for data in data_list.values()]
 
+    @classmethod
+    async def gen_all(cls, context, after, first):
+        if cls == Pent:
+            raise Exception('must specify concrete class')
+
+        type_id = context.config().get_type_id(cls)
+        data_list = await context.kvetch().gen_objects_of_type(type_id, after, first)
+        return [safe_create(context, data['obj_id'], cls, data) for data in data_list.values()]
+
     def obj_id(self):
         return self._obj_id
 

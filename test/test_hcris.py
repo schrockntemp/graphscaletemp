@@ -1,4 +1,4 @@
-#C0301: line too long. csv files 
+#C0301: line too long. csv files
 #pylint: disable=C0301
 
 import asyncio
@@ -67,10 +67,34 @@ def test_hcris_pent_massaging():
     assert hospital.fiscal_year_end() == date(2016, 6, 30)
     assert hospital.status() == HospitalStatus.AS_SUBMITTED
 
-def test_hcris_row_graphql():
+def test_browse_hospitals():
     graphql_schema = create_hcris_schema()
     pent_context = mem_context()
-    line = '100001,"100001",7/1/2015,"01-JUL-15",6/30/2016,"30-JUN-16","As Submitted",2,"SHANDS JACKSONVILLE MEDICAL CENTER","655 WEST 8TH STREET",,"JACKSONVILLE","FL","32209-","DUVAL"'
+    line_one = '100002,"100002",10/1/2015,"01-OCT-15",9/30/2016,"30-SEP-16","As Submitted",2,"BETHESDA HOSPITAL  INC","2815 SOUTH SEACREST BLVD",,"BOYNTON BEACH","FL","33435","PALM BEACH"'
+    line_two = '100006,"100006",10/1/2015,"01-OCT-15",9/30/2016,"30-SEP-16","As Submitted",2,"ORLANDO HEALTH","1414  KUHL AVENUE",,"ORLANDO","FL","32806","ORANGE"'
+    line_three = '100007,"100007",1/1/2015,"01-JAN-15",12/31/2015,"31-DEC-15","Amended",2,"FLORIDA HOSPITAL","601 EAST ROLLINS STREET",,"ORLANDO","FL","32803","ORANGE"'
+    datas = [
+        persist_hospital_from_csv(line_one, pent_context, graphql_schema),
+        persist_hospital_from_csv(line_two, pent_context, graphql_schema),
+        persist_hospital_from_csv(line_three, pent_context, graphql_schema),
+    ]
+
+    ids = [UUID(hex=data['createHospital']['id']) for data in datas]
+    id_first, id_second, id_third = tuple(sorted(ids))
+
+    all_hospitals = execute_gen(Hospital.gen_all(pent_context, None, None))
+    all_ids = [hospital.obj_id() for hospital in all_hospitals]
+    assert all_ids == [id_first, id_second, id_third]
+
+    after_one_hospitals = execute_gen(Hospital.gen_all(pent_context, after=id_first, first=None))
+    after_one_ids = [hospital.obj_id() for hospital in after_one_hospitals]
+    assert after_one_ids == [id_second, id_third]
+
+    after_one_first_one_hospitals = execute_gen(Hospital.gen_all(pent_context, after=id_first, first=1))
+    after_one_first_one_ids = [hospital.obj_id() for hospital in after_one_first_one_hospitals]
+    assert after_one_first_one_ids == [id_second]
+
+def persist_hospital_from_csv(line, pent_context, graphql_schema):
     data = create_test_hospital_data(line)
     mutation_query = string.Template("""
     mutation {
@@ -88,6 +112,7 @@ def test_hcris_row_graphql():
             zip_code: "${zip_code}"
             county: "${county}"
         }) {
+            id
             providerNumber
             fiscalYearBegin
             fiscalYearEnd
@@ -103,10 +128,15 @@ def test_hcris_row_graphql():
     }
 """).substitute(data)
 
-        #'po_box', 'city', 'state', 'zip_code', 'county']
-
     result = execute_query(mutation_query, pent_context, graphql_schema)
-    out_data = result.data
+    return result.data
+
+def test_hcris_row_graphql():
+    graphql_schema = create_hcris_schema()
+    pent_context = mem_context()
+    line = '100001,"100001",7/1/2015,"01-JUL-15",6/30/2016,"30-JUN-16","As Submitted",2,"SHANDS JACKSONVILLE MEDICAL CENTER","655 WEST 8TH STREET",,"JACKSONVILLE","FL","32209-","DUVAL"'
+    out_data = persist_hospital_from_csv(line, pent_context, graphql_schema)
+    del out_data['createHospital']['id']
     assert out_data['createHospital'] == {
         'providerNumber': 100001,
         'fiscalYearBegin': '2015-07-01',

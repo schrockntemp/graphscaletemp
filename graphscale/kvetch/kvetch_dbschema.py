@@ -9,6 +9,7 @@ def create_kvetch_objects_table_sql():
     updated DATETIME NOT NULL,
     body MEDIUMBLOB,
     UNIQUE KEY (obj_id),
+    UNIQUE KEY (type_id, obj_id),
     KEY (updated)
 ) ENGINE=InnoDB;
 """

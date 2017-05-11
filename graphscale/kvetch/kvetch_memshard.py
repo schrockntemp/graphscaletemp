@@ -1,6 +1,5 @@
 from datetime import datetime
 from uuid import UUID
-from functools import cmp_to_key
 from collections import OrderedDict
 
 from graphscale.utils import param_check
