@@ -1,3 +1,6 @@
+#C0301: line too long. csv files 
+#pylint: disable=C0301
+
 import asyncio
 import pytest
 import csv
@@ -35,61 +38,15 @@ def execute_query(query, pent_context, graphql_schema):
     )
     if result.errors:
         error = result.errors[0]
-        # print('ERROR THINGS')
-        # print('MESSAGE')
-        # print(error.message)
-        # print('STACK')
-        # print(error.stack)
-        # print('NODES')
-        # print(error.nodes)
-        # print('SOURCE')
-        # print(error.source)
-        # print('POSITIONS')
-        # print(error.positions)
-        # print('LOCATIONS')
-        # print(error.locations)
-        # print('ORIGINAL_STACK')
-        # # print(error.original_error.stack)
-        # #traceback.print_stack(error.stack)
-        # print(result.errors[0])
+        print('GraphQL Error:')
+        print(error)
         raise error.original_error
-        #raise Exception(str(result.errors))
     return result
 
 def mem_context():
     shard = KvetchMemShard()
     kvetch = Kvetch(shards=[shard], edges=[], indexes=[])
     return PentContext(kvetch=kvetch, config=get_hcris_config())
-
-# def test_insert_get():
-#     pent_context = mem_context()
-
-#     hospital_input = CreateHospitalInput({
-#         'provider': '102020',
-#         'fyb': '01/01/2015',
-#     })
-#     hospital = execute_gen(create_hospital(pent_context, hospital_input))
-#     assert isinstance(hospital.obj_id(), UUID)
-#     assert hospital.provider_number() == 102020
-
-#     graphql_schema = create_hcris_schema()
-#     hospital_id = hospital.obj_id()
-#     query = '{ hospital(id: "%s") { providerNumber } }' % hospital_id
-#     result = execute_query(query, pent_context, graphql_schema)
-#     assert result.data['hospital']['providerNumber'] == '102020'
-
-
-# def test_graphql_insert():
-#     pent_context = mem_context()
-#     graphql_schema = create_hcris_schema()
-#     mutation_query = """
-# mutation {
-#     createHospital(input: { provider: "1234", fyb: } ) {
-#         providerNumber
-#     }
-# }"""
-#     result = execute_query(mutation_query, pent_context, graphql_schema)
-#     assert result.data['createHospital']['providerNumber'] == '1234'
 
 def create_test_hospital_data(csv_row):
     header = [
@@ -120,15 +77,22 @@ def test_hcris_row_graphql():
         createHospital(input: {
             provider: "${provider}"
             fyb: "${fyb}"
+            fye: "${fye}"
+            status: "${status}"
         }) {
             providerNumber
             fiscalYearBegin
+            fiscalYearEnd
+            status
         }
     }
 """).substitute(data)
 
     result = execute_query(mutation_query, pent_context, graphql_schema)
-    assert result.data['createHospital'] == {
-        'providerNumber' : '100001',
-        'fiscalYearBegin' : '2015-07-01',
+    out_data = result.data
+    assert out_data['createHospital'] == {
+        'providerNumber': 100001,
+        'fiscalYearBegin': '2015-07-01',
+        'fiscalYearEnd': '2016-06-30',
+        'status': 'AS_SUBMITTED',
     }

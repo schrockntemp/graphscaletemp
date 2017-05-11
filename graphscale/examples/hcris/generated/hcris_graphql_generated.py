@@ -9,12 +9,15 @@ from graphql import (
     GraphQLArgument,
     GraphQLList,
     GraphQLInt,
+    GraphQLInputObjectField,
     GraphQLInputObjectType,
     GraphQLInputObjectField,
     GraphQLNonNull,
     GraphQLID,
-    GraphQLScalarType,
+    GraphQLEnumType,
 )
+
+from graphql.type import GraphQLEnumValue
 
 from graphscale.grapple import (
     GrappleType,
@@ -36,15 +39,34 @@ class GraphQLHospital(GrappleType):
                     resolver=lambda obj, args, *_: obj.obj_id(*args),
                 ),
                 'providerNumber': GraphQLField(
-                    type=req(GraphQLString),
+                    type=req(GraphQLInt),
                     resolver=lambda obj, args, *_: obj.provider_number(*args),
                 ),
                 'fiscalYearBegin': GraphQLField(
                     type=req(GraphQLDate.type()),
                     resolver=lambda obj, args, *_: obj.fiscal_year_begin(*args),
                 ),
+                'fiscalYearEnd': GraphQLField(
+                    type=req(GraphQLDate.type()),
+                    resolver=lambda obj, args, *_: obj.fiscal_year_end(*args),
+                ),
+                'status': GraphQLField(
+                    type=req(GraphQLHospitalStatus.type()),
+                    resolver=lambda obj, args, *_: obj.status().name if obj else None,
+                ),
             },
         )
+
+class GraphQLHospitalStatus(GrappleType):
+    @staticmethod
+    def create_type():
+        return GraphQLEnumType(
+            name='HospitalStatus',
+            values={
+                'AS_SUBMITTED': GraphQLEnumValue()
+            }
+        )
+
 
 class GraphQLCreateHospitalInput(GrappleType):
     @staticmethod
@@ -53,7 +75,9 @@ class GraphQLCreateHospitalInput(GrappleType):
             name='CreateHospitalInput',
             fields=lambda: {
                 'provider': GraphQLInputObjectField(type=req(GraphQLString)),
-                'fyb': GraphQLInputObjectField(type=GraphQLString),
+                'fyb': GraphQLInputObjectField(type=req(GraphQLString)),
+                'fye': GraphQLInputObjectField(type=req(GraphQLString)),
+                'status': GraphQLInputObjectField(type=req(GraphQLString)),
             },
         )
 
@@ -61,3 +85,4 @@ def generated_query_fields(pent_map):
     return {
         'hospital': define_top_level_getter(GraphQLHospital.type(), pent_map['Hospital']),
     }
+

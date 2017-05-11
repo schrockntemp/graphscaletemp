@@ -1,11 +1,18 @@
-type Hospital
-    @generatePent {
+type Hospital @generatePent {
     id: ID!
     providerNumber: Int!
     fiscalYearBegin: Date!
+    fiscalYearEnd: Date!
+    status: HospitalStatus!
 }
 
 input CreateHospitalInput {
     provider: String!
     fyb: String!
+    fye: String!
+    status: String!
+}
+
+enum HospitalStatus {
+    AS_SUBMITTED
 }

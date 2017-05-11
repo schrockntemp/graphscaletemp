@@ -37,7 +37,8 @@ class Hospital(Pent):
             'Settled w/Audit': HospitalStatus.SETTLED_WITH_AUDIT,
             'Reopened': HospitalStatus.REOPENED,
         }
-        return lookup[self._data['status']]
+        status_enum = lookup[self._data['status']]
+        return status_enum
 
 # Consider if this is going to be a necessary abstraction
 class CreateHospitalInput:

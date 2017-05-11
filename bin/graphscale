@@ -33,12 +33,15 @@ from graphql import (
     GraphQLArgument,
     GraphQLList,
     GraphQLInt,
-    GraphQLInputField,
+    GraphQLInputObjectField,
     GraphQLInputObjectType,
     GraphQLInputObjectField,
     GraphQLNonNull,
     GraphQLID,
+    GraphQLEnumType,
 )
+
+from graphql.type import GraphQLEnumValue
 
 from graphscale.grapple import (
     GrappleType,

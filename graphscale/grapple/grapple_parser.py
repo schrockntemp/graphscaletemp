@@ -12,6 +12,7 @@ from graphql.language.ast import (
     NonNullType,
     ListType,
     InputObjectTypeDefinition,
+    EnumTypeDefinition,
 )
 
 from graphscale.utils import param_check
@@ -35,9 +36,12 @@ def print_grapple_pents(document_ast):
 def print_graphql_defs(document_ast):
     writer = CodeWriter()
     for object_type in document_ast.object_types():
-        print_graphql_object_type(writer, object_type)
+        print_graphql_object_type(writer, document_ast, object_type)
     for input_type in document_ast.input_types():
         print_graphql_input_type(writer, input_type)
+    for enum_type in document_ast.enum_types():
+        print_graphql_enum_type(writer, enum_type)
+
     return writer.result()
 
 def uncapitalized(string):
@@ -81,7 +85,29 @@ def print_graphql_input_type(writer, grapple_type):
     writer.decrease_indent() # end class definition
     writer.blank_line()
 
-def print_graphql_object_type(writer, grapple_type):
+def print_graphql_enum_type(writer, grapple_type):
+    writer.line('class GraphQL%s(GrappleType):' % grapple_type.name())
+    writer.increase_indent() # begin class definition
+    writer.line('@staticmethod')
+    writer.line('def create_type():')
+    writer.increase_indent() # begin create_type body
+    writer.line('return GraphQLEnumType(')
+    writer.increase_indent() # begin GraphQLEnumType .ctor args
+    writer.line("name='%s'," % grapple_type.name())
+    writer.line('values={')
+    writer.increase_indent() # begin value declarations
+    for value in grapple_type.values():
+        writer.line("'%s': GraphQLEnumValue()," % value)
+    writer.decrease_indent() # end value declarations
+    writer.line('},')
+    writer.decrease_indent() # end GraphQLEnumType.ctor args
+    writer.line(')')
+
+    writer.decrease_indent() # end create_type body
+    writer.decrease_indent() # end class definition
+    writer.blank_line()
+
+def print_graphql_object_type(writer, document_ast, grapple_type):
     writer.line('class GraphQL%s(GrappleType):' % grapple_type.name())
     writer.increase_indent() # begin class definition
     writer.line('@staticmethod')
@@ -93,7 +119,7 @@ def print_graphql_object_type(writer, grapple_type):
     writer.line('fields=lambda: {')
     writer.increase_indent() # begin field declarations
     for field in grapple_type.fields():
-        print_graphql_field(writer, field)
+        print_graphql_field(writer, document_ast, field)
     writer.decrease_indent() # end field declarations
     writer.line('},')
     writer.decrease_indent() # end GraphQLObjectType .ctor args
@@ -137,9 +163,11 @@ def graphql_type_string(type_ref):
     else:
         return graphql_type + '!'
 
-def print_graphql_field(writer, grapple_field):
+def print_graphql_field(writer, document_ast, grapple_field):
     type_ref_str = type_ref_string(grapple_field.type_ref())
-    if grapple_field.is_bare_field():
+    is_enum = document_ast.is_enum(grapple_field.type_ref().graphql_type())
+    is_simple = grapple_field.is_bare_field() and not is_enum
+    if is_simple:
         writer.line("'%s': GraphQLField(type=%s)," % (grapple_field.name(), type_ref_str))
         return
 
@@ -157,15 +185,19 @@ def print_graphql_field(writer, grapple_field):
         writer.decrease_indent() # end entries in args dictionary
         writer.line('},') # close args dictionary
 
-    if grapple_field.requires_lambda():
-        writer.line('resolver=lambda obj, args, *_: obj.%s(*args),' % grapple_field.python_name())
+    python_name = grapple_field.python_name()
+    if is_enum:
+        writer.line('resolver=lambda obj, args, *_: obj.%s(*args).name if obj.%s(*args) else None,'
+                    % (python_name, python_name))
+    elif grapple_field.name_requires_lambda():
+        writer.line('resolver=lambda obj, args, *_: obj.%s(*args),' % python_name)
 
     writer.decrease_indent() # end args to GraphQLField .ctor
     writer.line('),') # close GraphQLField .ctor
 
 def print_graphql_input_field(writer, grapple_field):
     type_ref_str = type_ref_string(grapple_field.type_ref())
-    writer.line("'%s': GraphQLInputField(type=%s)," % (grapple_field.name(), type_ref_str))
+    writer.line("'%s': GraphQLInputObjectField(type=%s)," % (grapple_field.name(), type_ref_str))
 
 def graphql_type_to_python_type(graphql_type):
     scalars = {
@@ -190,16 +222,30 @@ class GrappleDocument:
     def input_types(self):
         return [t for t in self._types if t.is_input()]
 
+    def enum_types(self):
+        return [t for t in self._types if t.is_enum()]
+
+    def is_enum(self, name):
+        ttype = self.type_named(name)
+        return ttype and ttype.is_enum()
+
+    def type_named(self, name):
+        for ttype in self._types:
+            if ttype.name() == name:
+                return ttype
+
 class TypeVarietal(Enum):
     OBJECT = auto()
     INPUT = auto()
+    ENUM = auto()
 
 class GrappleTypeDefinition:
-    def __init__(self, *, name, fields, generate_pent, type_varietal):
+    def __init__(self, *, name, fields, generate_pent, values=None, type_varietal):
         self._name = name
         self._fields = fields
         self._generate_pent = generate_pent
         self._type_varietal = type_varietal
+        self._values = values
 
     @staticmethod
     def object_type(*, name, fields, generate_pent):
@@ -217,11 +263,23 @@ class GrappleTypeDefinition:
             generate_pent=False,
             type_varietal=TypeVarietal.INPUT)
 
+    @staticmethod
+    def enum_type(*, name, values):
+        return GrappleTypeDefinition(
+            name=name,
+            fields=[],
+            generate_pent=False,
+            values=values,
+            type_varietal=TypeVarietal.ENUM)
+
     def name(self):
         return self._name
 
     def fields(self):
         return self._fields
+
+    def values(self):
+        return self._values
 
     def generate_pent(self):
         return self._generate_pent
@@ -232,21 +290,24 @@ class GrappleTypeDefinition:
     def is_input(self):
         return self._type_varietal == TypeVarietal.INPUT
 
+    def is_enum(self):
+        return self._type_varietal == TypeVarietal.ENUM
+
 class GrappleField:
     def __init__(self, *, name, grapple_type_ref, args):
         self._name = name
         self._grapple_type_ref = grapple_type_ref
         self._args = args
-        self._requires_lambda = name == 'id' or is_camel_case(name)
+        self._name_requires_lambda = name == 'id' or is_camel_case(name)
 
     def is_bare_field(self):
-        return len(self._args) == 0 and not self.requires_lambda()
+        return len(self._args) == 0 and not self.name_requires_lambda()
 
     def name(self):
         return self._name
 
-    def requires_lambda(self):
-        return self._requires_lambda
+    def name_requires_lambda(self):
+        return self._name_requires_lambda
 
     def python_name(self):
         if self.name() == 'id':
@@ -272,9 +333,19 @@ def create_grapple_type_definition(type_ast):
         return create_grapple_object_type(type_ast)
     elif isinstance(type_ast, InputObjectTypeDefinition):
         return create_grapple_input_type(type_ast)
+    elif isinstance(type_ast, EnumTypeDefinition):
+        return create_grapple_enum_type(type_ast)
     else:
         raise Exception('node not supported: ' + str(type_ast))
 
+def create_grapple_enum_type(enum_type_ast):
+    grapple_type_name = enum_type_ast.name.value
+
+    values = [value_ast.name.value for value_ast in enum_type_ast.values]
+    return GrappleTypeDefinition.enum_type(
+        name=grapple_type_name,
+        values=values,
+    )
 
 def create_grapple_input_type(input_type_ast):
     grapple_type_name = input_type_ast.name.value

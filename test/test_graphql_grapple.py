@@ -148,3 +148,43 @@ def test_args():
             },
         )
 """
+
+def test_enum():
+    graphql = """
+type Hospital {
+    status: HospitalStatus
+    reqStatus: HospitalStatus!
+}
+
+enum HospitalStatus {
+    AS_SUBMITTED
+}
+"""
+    result = print_graphql_defs(parse_grapple(graphql))
+    assert result == """class GraphQLHospital(GrappleType):
+    @staticmethod
+    def create_type():
+        return GraphQLObjectType(
+            name='Hospital',
+            fields=lambda: {
+                'status': GraphQLField(
+                    type=GraphQLHospitalStatus.type(),
+                    resolver=lambda obj, args, *_: obj.status(*args).name if obj.status(*args) else None,
+                ),
+                'reqStatus': GraphQLField(
+                    type=req(GraphQLHospitalStatus.type()),
+                    resolver=lambda obj, args, *_: obj.req_status(*args).name if obj.req_status(*args) else None,
+                ),
+            },
+        )
+
+class GraphQLHospitalStatus(GrappleType):
+    @staticmethod
+    def create_type():
+        return GraphQLEnumType(
+            name='HospitalStatus',
+            values={
+                'AS_SUBMITTED': GraphQLEnumValue(),
+            },
+        )
+"""
