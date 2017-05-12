@@ -51,7 +51,8 @@ def get_kvetch():
 
     index = KvetchDbIndexDefinition(
         indexed_attr='provider',
-        indexed_sql_type='CHAR(255)',
+        indexed_type_id=100000, # Hospital
+        sql_type_of_index='CHAR(255)',
         index_name='provider_index',
     )
 

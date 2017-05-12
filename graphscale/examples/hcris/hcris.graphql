@@ -13,19 +13,23 @@ type Hospital @generatePent {
     county: String!
 }
 
-input CreateHospitalInput {
+# from ~/data/hcris/providers/addr2552_10.csv
+input HospitalCsvRow {
     provider: String!
+    prvdr_num: String!
     fyb: String!
+    fybstr: String!
     fye: String!
+    fyestr: String!
     status: String!
     ctrl_type: String!
     hosp_name: String!
-    street_addr: String!
+    street_addr: String
     po_box: String
     city: String!
     state: String!
     zip_code: String!
-    county: String!
+    county: String
 }
 
 enum HospitalStatus {
@@ -34,4 +38,41 @@ enum HospitalStatus {
     AMENDED
     SETTLED_WITH_AUDIT
     REOPENED
+}
+
+# from ~/data/hcris/2552-10/2016/hosp_rpt2552_10_2016.csv
+input ReportCsvRow {
+    rpt_rec_num: String!
+    prvdr_ctrl_type_cd: String!
+    prvdr_num: String!
+    rpt_stus_cd: String!
+    initl_rpt_sw: String!
+    last_rpt_sw: String!
+    trnsmtl_num: String!
+    fi_num: String!
+    adr_vndr_cd: String!
+    util_cd: String!
+    spec_ind: String
+    npi: String
+    fy_bgn_dt: String!
+    fy_end_dt: String!
+    proc_dt: String!
+    fi_creat_dt: String!
+    npr_dt: String
+    fi_rcpt_dt: String!
+}
+
+type Report {
+    id: ID!
+    reportRecordNumber: Int!
+    providerNumber: Int!
+    fiscalIntermediaryNumber: Int!
+    processDate: Date!
+    medicareUtilizationLevel: MedicareUtilizationLevel!
+}
+
+enum MedicareUtilizationLevel {
+    NONE
+    LOW
+    FULL
 }

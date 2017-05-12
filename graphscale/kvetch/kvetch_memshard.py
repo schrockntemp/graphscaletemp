@@ -11,18 +11,23 @@ from graphscale.kvetch.kvetch import (
 )
 
 class KvetchMemIndexDefinition(KvetchIndexDefinition):
-    def __init__(self, *, indexed_attr, index_name):
+    def __init__(self, *, index_name, indexed_type_id, indexed_attr):
         param_check(indexed_attr, str, 'indexed_attr')
+        param_check(indexed_type_id, int, 'indexed_type_id')
         param_check(index_name, str, 'index_name')
 
         self._indexed_attr = indexed_attr
         self._index_name = index_name
+        self._indexed_type_id = indexed_type_id
 
     def index_name(self):
         return self._index_name
 
     def indexed_attr(self):
         return self._indexed_attr
+
+    def indexed_type_id(self):
+        return self._indexed_type_id
 
 class KvetchMemEdgeDefinition(KvetchEdgeDefinition):
     pass
@@ -79,7 +84,11 @@ class KvetchMemShard(KvetchShard):
         return index_entry
 
     async def gen_index_entries(self, index, index_value):
-        index_dict = self._all_indexes[index.index_name()]
+        index_name = index.index_name()
+        if index_name not in self._all_indexes:
+            self._all_indexes[index_name] = {}
+
+        index_dict = self._all_indexes[index_name]
         return index_dict[index_value]
 
     async def gen_update_object(self, obj_id, data):

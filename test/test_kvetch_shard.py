@@ -73,8 +73,9 @@ def mem_edge_and_index_shard():
         from_id_attr='related_id',
     )
     num_index = KvetchMemIndexDefinition(
+        index_name='num_index',
+        indexed_type_id=1000,
         indexed_attr='num',
-        index_name='num_index'
     )
     edges = {'related_edge': related_edge}
     indexes = {'num_index': num_index}
@@ -88,7 +89,8 @@ def db_edge_and_index_shard():
     )
     num_index = KvetchDbIndexDefinition(
         indexed_attr='num',
-        indexed_sql_type='INT',
+        indexed_type_id=1000,
+        sql_type_of_index='INT',
         index_name='num_index'
     )
     shard = KvetchDbShard(

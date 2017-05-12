@@ -12,6 +12,47 @@ class HospitalStatus(Enum):
     SETTLED_WITH_AUDIT = auto()
     REOPENED = auto()
 
+class MedicareUtilizationLevel(Enum):
+    NONE = auto()
+    LOW = auto()
+    FULL = auto()
+
+def parse_american_date(value):
+    parts = value.split('/')
+    return date(int(parts[2]), int(parts[0]), int(parts[1]))
+
+class Report(Pent):
+    @staticmethod
+    # This method checks to see that data coming out of the database is valid
+    def is_input_data_valid(_data):
+        return True
+
+    def report_record_number(self):
+        return int(self._data['rpt_rec_num'])
+
+    def provider_number(self):
+        return int(self._data['prvdr_num'])
+
+    async def gen_hospital(self):
+        pass
+
+    def fiscal_intermediary_number(self):
+        return self._data['fi_num']
+
+    def process_date(self):
+        return parse_american_date(self._data['proc_dt'])
+
+    def medicare_utilization_level(self):
+        code = self._data['util_cd']
+        if code == 'N':
+            return MedicareUtilizationLevel.NONE
+        if code == 'L':
+            return MedicareUtilizationLevel.LOW
+        if code == 'F' or code == '':
+            return MedicareUtilizationLevel.FULL
+
+        raise Exception('unexpected code: ' + code)
+
 class Hospital(Pent):
     @staticmethod
     # This method checks to see that data coming out of the database is valid
@@ -22,12 +63,10 @@ class Hospital(Pent):
         return int(self._data['provider'])
 
     def fiscal_year_begin(self):
-        parts = self._data['fyb'].split('/')
-        return date(int(parts[2]), int(parts[0]), int(parts[1]))
+        return parse_american_date(self._data['fyb'])
 
     def fiscal_year_end(self):
-        parts = self._data['fye'].split('/')
-        return date(int(parts[2]), int(parts[0]), int(parts[1]))
+        return parse_american_date(self._data['fye'])
 
     def status(self):
         lookup = {

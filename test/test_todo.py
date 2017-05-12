@@ -24,7 +24,6 @@ from graphscale.kvetch.kvetch_dbshard import (
 
 from graphscale.kvetch.kvetch_memshard import (
     KvetchMemShard,
-    KvetchMemIndexDefinition,
     KvetchMemEdgeDefinition,
 )
 

@@ -1,5 +1,9 @@
 from graphscale.utils import execute_gen, param_check
-from graphscale.kvetch.kvetch import KvetchShard
+from graphscale.kvetch.kvetch import Kvetch, KvetchShard
+
+def insert_object(kvetch, type_id, data):
+    param_check(kvetch, Kvetch, 'kvetch')
+    return execute_gen(kvetch.gen_insert_object(type_id, data))
 
 def sync_kv_delete_object(shard, obj_id):
     param_check(shard, KvetchShard, 'shard')

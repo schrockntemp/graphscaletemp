@@ -42,6 +42,7 @@ class Kvetch:
         self._shard_lookup = dict(zip(self._shards, range(0, len(shards))))
         # index_name => index
         self._index_dict = dict(zip([index.index_name() for index in indexes], indexes))
+        # edge_name => edge
         self._edge_dict = dict(zip([edge.edge_name() for edge in edges], edges))
 
     def get_index(self, index_name):
@@ -92,6 +93,9 @@ class Kvetch:
             await from_id_shard.gen_insert_edge(edge_definition, from_id, new_id, {})
 
         for index in self._index_dict.values():
+            if index.indexed_type_id() != type_id:
+                continue
+
             attr = index.indexed_attr()
             if not(attr in data) or not data[attr]:
                 continue

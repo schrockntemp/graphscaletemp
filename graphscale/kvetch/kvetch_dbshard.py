@@ -26,15 +26,18 @@ class KvetchDbSingleConnectionPool:
 class KvetchDbEdgeDefinition(KvetchEdgeDefinition):
     pass
 
+## TODO add index type
 class KvetchDbIndexDefinition(KvetchIndexDefinition):
-    def __init__(self, *, indexed_attr, indexed_sql_type, index_name):
-        param_check(indexed_attr, str, 'indexed_attr')
-        param_check(indexed_sql_type, str, 'indexed_sql_type')
+    def __init__(self, *, index_name, indexed_type_id, indexed_attr, sql_type_of_index):
         param_check(index_name, str, 'index_name')
+        param_check(indexed_type_id, int, 'indexed_type_id')
+        param_check(indexed_attr, str, 'indexed_attr')
+        param_check(sql_type_of_index, str, 'sql_type_of_index')
 
-        self._indexed_attr = indexed_attr
-        self._indexed_sql_type = indexed_sql_type
         self._index_name = index_name
+        self._indexed_type_id = indexed_type_id
+        self._indexed_attr = indexed_attr
+        self._sql_type_of_index = sql_type_of_index
 
     def index_name(self):
         return self._index_name
@@ -42,8 +45,8 @@ class KvetchDbIndexDefinition(KvetchIndexDefinition):
     def indexed_attr(self):
         return self._indexed_attr
 
-    def indexed_sql_type(self):
-        return self._indexed_sql_type
+    def sql_type_of_index(self):
+        return self._sql_type_of_index
 
 class KvetchDbShard(KvetchShard):
     def __init__(self, *, pool):

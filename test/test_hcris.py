@@ -19,6 +19,8 @@ from graphscale.examples.hcris.hcris_pent import (
     CreateHospitalInput,
     Hospital,
     HospitalStatus,
+    Report,
+    MedicareUtilizationLevel,
 )
 
 from graphscale.kvetch import Kvetch
@@ -48,16 +50,29 @@ def mem_context():
     kvetch = Kvetch(shards=[shard], edges=[], indexes=[])
     return PentContext(kvetch=kvetch, config=get_hcris_config())
 
+def create_test_data(header, csv_row):
+    reader = csv.reader([csv_row], delimiter=',', quotechar='"')
+    values = next(reader)
+    return dict(zip(header, values))
+
 def create_test_hospital_data(csv_row):
     header = [
         'provider', 'prvdr_num', 'fyb', 'fybstr', 'fye',
         'fyestr', 'status', 'ctrl_type', 'hosp_name', 'street_addr', 'po_box',
         'city', 'state', 'zip_code', 'county']
-    reader = csv.reader([csv_row], delimiter=',', quotechar='"')
-    values = next(reader)
-    return dict(zip(header, values))
+    return create_test_data(header, csv_row)
 
-def test_hcris_pent_massaging():
+def create_test_report_data(csv_row):
+    header = [
+        'rpt_rec_num', 'prvdr_ctrl_type_cd', 'prvdr_num', 'rpt_stus_cd',
+        'initl_rpt_sw', 'last_rpt_sw', 'trnsmtl_num', 'fi_num',
+        'adr_vndr_cd', 'util_cd', 'spec_ind', 'npi', 'fy_bgn_dt', 'fy_end_dt',
+        'proc_dt', 'fi_creat_dt', 'npr_dt', 'fi_rcpt_dt'
+    ]
+    return create_test_data(header, csv_row)
+
+
+def test_hcris_pent_hospital_massaging():
     obj_id = uuid4()
     line = '100001,"100001",7/1/2015,"01-JUL-15",6/30/2016,"30-JUN-16","As Submitted",2,"SHANDS JACKSONVILLE MEDICAL CENTER","655 WEST 8TH STREET",,"JACKSONVILLE","FL","32209-","DUVAL"'
     data = create_test_hospital_data(line)
@@ -150,3 +165,17 @@ def test_hcris_row_graphql():
         'zipCode': '32209',
         'county': 'DUVAL',
     }
+
+def test_hcris_report():
+    obj_id = uuid4()
+    # type_id = 200000 # report objects
+    line = '577257,"2","420011",1,"N","N","G","11001",4,"F",,,10/1/2015,12/31/2015,6/14/2016,6/1/2016,,5/25/2016'
+    data = create_test_report_data(line)
+    print(data)
+    report = Report(mem_context(), obj_id, data)
+    assert report.obj_id() == obj_id
+    assert report.report_record_number() == 577257
+    assert report.provider_number() == 420011
+    assert report.fiscal_intermediary_number() == '11001'
+    assert report.process_date() == date(2016, 6, 14)
+    assert report.medicare_utilization_level() == MedicareUtilizationLevel.FULL

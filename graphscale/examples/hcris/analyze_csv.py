@@ -63,14 +63,16 @@ class DefinedSetRule:
 
 class RegexRule:
     def __init__(self, pattern, description):
-        self.passes = True
+        self.passes = None
         self.compiled = re.compile(pattern)
         self._description = description
 
     def process(self, value):
         if not value:
             return
-        if self.passes:
+        if self.passes is None:
+            self.passes = self.compiled.match(value)
+        elif self.passes is True:
             if not self.compiled.match(value):
                 self.passes = False
 
@@ -128,8 +130,10 @@ class ColumnTracker:
         self.defined_set = True
         self.values = set()
 
+        self.no_nulls_rule = no_nulls_rule()
+
         self.rules = [
-            no_nulls_rule(),
+            self.no_nulls_rule,
             has_nulls_rule(),
             all_nulls_rules(),
             int_rule(),
@@ -154,6 +158,9 @@ class ColumnTracker:
                 results.append(rule.description)
         return results
 
+    def is_nullable(self):
+        return not self.no_nulls_rule.passes
+
 def do_analysis(args):
     path = args[1]
     trackers = {}
@@ -175,13 +182,25 @@ def do_analysis(args):
                 #         return
                 trackers[key].process_value(value)
 
-    print('Rows: ' + str(num_rows))
+    print('Num Rows: ' + str(num_rows))
+    print('Columns: ')
+    print(column_names)
     for name, tracker in trackers.items():
         print('Column: ' + name)
         for description in tracker.rules_results():
             print('    ' + description)
 
         print('')
+
+    print('Input Decl:')
+    print('input TYPENAMEHERE {')
+    for name, tracker in trackers.items():
+        if tracker.is_nullable():
+            print('    %s: String' % name)
+        else:
+            print('    %s: String!' % name)
+
+    print('}')
 
 if __name__ == '__main__':
     do_analysis(sys.argv)

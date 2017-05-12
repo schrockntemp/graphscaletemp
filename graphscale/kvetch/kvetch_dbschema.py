@@ -56,7 +56,7 @@ def create_kvetch_edges_table(shard):
 def create_kvetch_index_table(shard, shard_index):
     sql = create_kvetch_index_table_sql(
         shard_index.indexed_attr(),
-        shard_index.indexed_sql_type(),
+        shard_index.sql_type_of_index(),
         'target_id',
         shard_index.index_name())
     execute_sql(shard.conn(), sql)

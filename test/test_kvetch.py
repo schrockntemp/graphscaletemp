@@ -58,7 +58,11 @@ def single_edge_kvetch(request):
     return request.param()
 
 def single_shard_single_index():
-    num_index = KvetchMemIndexDefinition(indexed_attr='num', index_name='num_index')
+    num_index = KvetchMemIndexDefinition(
+        index_name='num_index',
+        indexed_type_id=2345,
+        indexed_attr='num',
+    )
     return Kvetch(shards=[KvetchMemShard()], edges=[], indexes=[num_index])
 
 @pytest.fixture
