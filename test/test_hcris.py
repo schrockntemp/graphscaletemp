@@ -21,7 +21,12 @@ from graphscale.examples.hcris.hcris_pent import (
     ProviderStatus,
     Report,
     MedicareUtilizationLevel,
+    get_pent_context,
 )
+
+from graphscale.examples.hcris.hcris_db import init_hcris_db_kvetch 
+
+from test.test_utils import MagnusConn, db_mem_fixture
 
 from graphscale.kvetch import Kvetch
 from graphscale.kvetch.kvetch_memshard import KvetchMemShard
@@ -53,6 +58,11 @@ def mem_context():
     kvetch = Kvetch(shards=[shard], edges=[], indexes=[])
     return PentContext(kvetch=kvetch, config=get_hcris_config())
 
+def db_context():
+    conn = MagnusConn.get_unittest_conn()
+    return get_pent_context(init_hcris_db_kvetch(conn))
+
+
 def create_test_data(header, csv_row):
     reader = csv.reader([csv_row], delimiter=',', quotechar='"')
     values = next(reader)
@@ -74,20 +84,22 @@ def create_test_report_data(csv_row):
     ]
     return create_test_data(header, csv_row)
 
+@pytest.fixture(params=db_mem_fixture(mem=mem_context, db=db_context))
+def pent_context(request):
+    return request.param()
 
-def test_hcris_pent_hospital_massaging():
+def test_hcris_pent_hospital_massaging(pent_context):
     obj_id = uuid4()
     line = '100001,"100001",7/1/2015,"01-JUL-15",6/30/2016,"30-JUN-16","As Submitted",2,"SHANDS JACKSONVILLE MEDICAL CENTER","655 WEST 8TH STREET",,"JACKSONVILLE","FL","32209-","DUVAL"'
     data = create_test_hospital_data(line)
-    hospital = Provider(mem_context(), obj_id, data)
+    hospital = Provider(pent_context, obj_id, data)
     assert hospital.provider_number() == 100001
     assert hospital.fiscal_year_begin() == date(2015, 7, 1)
     assert hospital.fiscal_year_end() == date(2016, 6, 30)
     assert hospital.status() == ProviderStatus.AS_SUBMITTED
 
-def test_browse_hospitals():
+def test_browse_hospitals(pent_context):
     graphql_schema = create_hcris_schema()
-    pent_context = mem_context()
     line_one = '100002,"100002",10/1/2015,"01-OCT-15",9/30/2016,"30-SEP-16","As Submitted",2,"BETHESDA HOSPITAL  INC","2815 SOUTH SEACREST BLVD",,"BOYNTON BEACH","FL","33435","PALM BEACH"'
     line_two = '100006,"100006",10/1/2015,"01-OCT-15",9/30/2016,"30-SEP-16","As Submitted",2,"ORLANDO HEALTH","1414  KUHL AVENUE",,"ORLANDO","FL","32806","ORANGE"'
     line_three = '100007,"100007",1/1/2015,"01-JAN-15",12/31/2015,"31-DEC-15","Amended",2,"FLORIDA HOSPITAL","601 EAST ROLLINS STREET",,"ORLANDO","FL","32803","ORANGE"'
@@ -149,9 +161,8 @@ def persist_hospital_from_csv(line, pent_context, graphql_schema):
     result = execute_query(mutation_query, pent_context, graphql_schema)
     return result.data
 
-def test_hcris_row_graphql():
+def test_hcris_row_graphql(pent_context):
     graphql_schema = create_hcris_schema()
-    pent_context = mem_context()
     line = '100001,"100001",7/1/2015,"01-JUL-15",6/30/2016,"30-JUN-16","As Submitted",2,"SHANDS JACKSONVILLE MEDICAL CENTER","655 WEST 8TH STREET",,"JACKSONVILLE","FL","32209-","DUVAL"'
     out_data = persist_hospital_from_csv(line, pent_context, graphql_schema)
     del out_data['createProvider']['id']
