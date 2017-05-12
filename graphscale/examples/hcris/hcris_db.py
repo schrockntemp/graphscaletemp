@@ -40,4 +40,4 @@ def create_hcris_db_kvetch(conn):
     indexes = get_indexes()
 
     init_shard_db_tables(shards[0], indexes)
-    return Kvetch(shards=shards, edges=[], indexes=indexes)
+    return Kvetch(shards=shards, edges=get_edges(), indexes=indexes)
