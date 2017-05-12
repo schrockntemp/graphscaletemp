@@ -1,5 +1,5 @@
 #C0301: line too long. csv files
-#pylint: disable=C0301
+#pylint: disable=W0621,C0103,W0401,W0614,C0301
 
 import asyncio
 import pytest
