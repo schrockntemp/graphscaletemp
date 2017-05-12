@@ -21,6 +21,11 @@ def parse_american_date(value):
     parts = value.split('/')
     return date(int(parts[2]), int(parts[0]), int(parts[1]))
 
+import sys
+
+def print_error(val):
+    sys.stderr.write(str(val) + '\n')
+
 class Report(Pent):
     @staticmethod
     # This method checks to see that data coming out of the database is valid
@@ -33,10 +38,16 @@ class Report(Pent):
     def provider_number(self):
         return int(self._data['prvdr_num'])
 
-    async def gen_hospital(self):
-        pass
+    async def provider(self):
+        kvetch = self.kvetch()
+        index = kvetch.get_index('Provider_provider_index')
+        ids = await kvetch.gen_ids_from_index(index, self._data['prvdr_num'])
+        if not ids:
+            return None
+        provider = await Provider.gen(self.context(), ids[0])
+        return provider
 
-    def fiscal_intermediary_number(self):
+    def fiscal_intrmediary_number(self):
         return self._data['fi_num']
 
     def process_date(self):
@@ -115,7 +126,10 @@ def get_hcris_edge_config():
     return {}
 
 def get_hcris_object_config():
-    return {100000: Provider}
+    return {
+        100000: Provider,
+        200000: Report,
+    }
 
 def get_hcris_config():
     return PentConfig(object_config=get_hcris_object_config(), edge_config=get_hcris_edge_config())

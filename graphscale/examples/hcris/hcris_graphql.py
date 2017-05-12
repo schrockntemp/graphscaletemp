@@ -14,7 +14,12 @@ from graphql import(
 
 from graphscale.grapple import GrappleType, req, list_of
 
-from .generated.hcris_graphql_generated import GraphQLProvider, GraphQLProviderCsvRow 
+from .generated.hcris_graphql_generated import (
+    GraphQLProvider,
+    GraphQLProviderCsvRow,
+    GraphQLReport,
+)
+
 from .generated.hcris_graphql_generated import generated_query_fields
 
 from .hcris_pent import Provider, Report, ProviderCsvRow, create_provider
@@ -39,6 +44,7 @@ def create_hcris_schema():
         query=GraphQLObjectType(
             name='Query',
             fields=lambda: {**generated_query_fields(pent_map()), **{
+                # custom fields go here
                 'allProviders': GraphQLField(
                     type=req(list_of(req(GraphQLProvider.type()))),
                     args={
@@ -47,7 +53,14 @@ def create_hcris_schema():
                     },
                     resolver=all_hospitals_resolver,
                 ),
-                # custom fields go here
+                'allReports': GraphQLField(
+                    type=req(list_of(req(GraphQLReport.type()))),
+                    args={
+                        'after': GraphQLArgument(type=GraphQLID),
+                        'first': GraphQLArgument(type=GraphQLInt),
+                    },
+                    resolver=all_reports_resolver,
+                ),
             }},
         ),
         mutation=GraphQLObjectType(
@@ -64,6 +77,18 @@ def create_hcris_schema():
 async def create_hospital_resolver(_parent, args, context, *_):
     hospital_input = ProviderCsvRow(args['input'])
     return await create_provider(context, hospital_input)
+
+async def all_reports_resolver(_parent, args, context, *_):
+    try:
+        after = None
+        if args.get('after'):
+            after = UUID(hex=args['after'])
+        first = args.get('first')
+        return await Report.gen_all(context, after, first)
+    except Exception as error:
+        import sys
+        sys.stderr.write(error)
+
 
 async def all_hospitals_resolver(_parent, args, context, *_):
     try:

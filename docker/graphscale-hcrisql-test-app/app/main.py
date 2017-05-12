@@ -25,13 +25,9 @@ from graphscale.pent.pent import (
     PentContext
 )
 
-from graphscale.examples.hcris.hcris_pent import (
-    get_hcris_config
-)
-
-from graphscale.examples.hcris.hcris_graphql import (
-    create_hcris_schema
-)
+from graphscale.examples.hcris.hcris_db import create_hcris_db_kvetch
+from graphscale.examples.hcris.hcris_pent import get_hcris_config
+from graphscale.examples.hcris.hcris_graphql import  create_hcris_schema
 # from graphscale.utils import param_check, execute_gen
 
 from flask_graphql import GraphQLView
@@ -45,22 +41,7 @@ def get_kvetch():
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor)
 
-    shards = [KvetchDbShard(
-        pool=KvetchDbSingleConnectionPool(hcrisql_conn),
-    )]
-
-    index = KvetchDbIndexDefinition(
-        indexed_attr='provider',
-        indexed_type_id=100000, # Hospital
-        sql_type_of_index='CHAR(255)',
-        index_name='provider_index',
-    )
-
-    # drop_shard_db_tables(shards[0], {})
-    init_shard_db_tables(shards[0], {
-        'provider_index': index
-    })
-    return Kvetch(shards=shards, edges=[], indexes=[index])
+    return create_hcris_db_kvetch(hcrisql_conn)
 
 def create_pent_context():
     kvetch = get_kvetch()

@@ -48,6 +48,9 @@ class KvetchDbIndexDefinition(KvetchIndexDefinition):
     def sql_type_of_index(self):
         return self._sql_type_of_index
 
+    def indexed_type_id(self):
+        return self._indexed_type_id
+
 class KvetchDbShard(KvetchShard):
     def __init__(self, *, pool):
         self._pool = pool

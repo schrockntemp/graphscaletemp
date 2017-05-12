@@ -4,20 +4,14 @@ import csv
 import pymysql
 import pymysql.cursors
 
-from graphscale.kvetch.kvetch import Kvetch
-from graphscale.kvetch.kvetch_dbshard import (
-    KvetchDbShard,
-    KvetchDbSingleConnectionPool,
-    KvetchDbIndexDefinition,
-)
-from graphscale.kvetch.kvetch_dbschema import (
-    init_shard_db_tables,
-    drop_shard_db_tables,
+from graphscale.kvetch import sync
+
+from graphscale.examples.hcris.hcris_db import (
+    init_hcris_db_kvetch,
+    create_hcris_db_kvetch,
 )
 
 from graphscale.utils import execute_gen
-
-from graphscale.kvetch import sync
 
 def create_kvetch():
     hcrisql_conn = pymysql.connect(
@@ -27,23 +21,10 @@ def create_kvetch():
         db='graphscale-hcrisql-db',
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor)
+    # return init_hcris_db_kvetch(hcrisql_conn)
+    return create_hcris_db_kvetch(hcrisql_conn)
 
-    shards = [KvetchDbShard(
-        pool=KvetchDbSingleConnectionPool(hcrisql_conn),
-    )]
-
-    index = KvetchDbIndexDefinition(
-        indexed_attr='provider',
-        indexed_type_id=100000, # Hospital
-        sql_type_of_index='CHAR(255)',
-        index_name='provider_index',
-    )
-    # drop_shard_db_tables(shards[0], {})
-    # init_shard_db_tables(shards[0], {})
-    return Kvetch(shards=shards, edges=[], indexes=[index])
-
-async def create_hospitals():
-    filename = sys.argv[1]
+async def create_hospitals(filename):
     expected_header = [
         'provider', 'prvdr_num', 'fyb', 'fybstr', 'fye',
         'fyestr', 'status', 'ctrl_type', 'hosp_name', 'street_addr', 'po_box',
@@ -59,12 +40,15 @@ async def create_hospitals():
         if header != expected_header:
             raise Exception('headers not expected')
 
+        count = 0
         for data_row in row_reader:
             data = dict(zip(header, data_row))
             new_id = await kvetch.gen_insert_object(type_id, data)
-            print('inserted ' + str(new_id))
+            print('inserted provider ' + str(new_id) + ' num ' + str(count))
+            count += 1
 
-def create_reports():
+
+async def create_reports(filename):
     expected_header = [
         'rpt_rec_num', 'prvdr_ctrl_type_cd', 'prvdr_num', 'rpt_stus_cd',
         'initl_rpt_sw', 'last_rpt_sw', 'trnsmtl_num', 'fi_num',
@@ -72,18 +56,18 @@ def create_reports():
         'proc_dt', 'fi_creat_dt', 'npr_dt', 'fi_rcpt_dt'
     ]
     type_id = 200000 # report objects
-    filename = sys.argv[1]
     kvetch = create_kvetch()
     with open(filename, 'r') as csvfile:
         row_reader = csv.reader(csvfile, delimiter=',', quotechar='"')
         header = next(row_reader)
-
         if header != expected_header:
             raise Exception('headers not expected')
+        count = 0
         for data_row in row_reader:
             data = dict(zip(header, data_row))
-            new_id = sync.insert_object(kvetch, type_id, data)
-            print('inserted new_id ' + str(new_id))
+            new_id = await kvetch.gen_insert_object(type_id, data)
+            print('inserted report ' + str(new_id) + ' num ' + str(count))
+            count += 1
 
 async def test_index_lookup():
     kvetch = create_kvetch()
@@ -92,5 +76,7 @@ async def test_index_lookup():
     print(objs)
 
 if __name__ == '__main__':
-    create_reports()
-    #execute_gen(create_hospitals())
+    # ~/data/hcris/providers/addr2552_10.csv
+    # execute_gen(create_hospitals())
+    # ~/data/hcris/2552-10/2016/hosp_rpt2552_10_2016.csv
+    execute_gen(create_reports('/Users/schrockn/data/hcris/2552-10/2016/hosp_rpt2552_10_2016.csv'))

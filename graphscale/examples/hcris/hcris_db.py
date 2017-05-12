@@ -1,0 +1,44 @@
+from graphscale.kvetch import Kvetch
+from graphscale.kvetch.kvetch_dbshard import (
+    KvetchDbShard,
+    KvetchDbSingleConnectionPool,
+    # KvetchDbEdgeDefinition,
+    KvetchDbIndexDefinition,
+)
+
+from graphscale.kvetch.kvetch_dbschema import (
+    init_shard_db_tables,
+    drop_shard_db_tables,
+)
+
+def get_indexes():
+    provider_index = KvetchDbIndexDefinition(
+        indexed_attr='provider',
+        indexed_type_id=100000, # Provider
+        sql_type_of_index='CHAR(255)',
+        index_name='Provider_provider_index',
+    )
+
+    prvdr_num_index = KvetchDbIndexDefinition(
+        indexed_attr='prvdr_num',
+        indexed_type_id=200000, # Report
+        sql_type_of_index='CHAR(255)',
+        index_name='Report_prvdr_index',
+    )
+
+    return [provider_index, prvdr_num_index]
+
+def init_hcris_db_kvetch(conn):
+    shards = [KvetchDbShard(pool=KvetchDbSingleConnectionPool(conn))]
+    indexes = get_indexes()
+
+    drop_shard_db_tables(shards[0], indexes)
+    init_shard_db_tables(shards[0], indexes)
+    return Kvetch(shards=shards, edges=[], indexes=indexes)
+
+def create_hcris_db_kvetch(conn):
+    shards = [KvetchDbShard(pool=KvetchDbSingleConnectionPool(conn))]
+    indexes = get_indexes()
+
+    init_shard_db_tables(shards[0], indexes)
+    return Kvetch(shards=shards, edges=[], indexes=indexes)

@@ -153,3 +153,10 @@ class Kvetch:
             ids.extend([entry['target_id'] for entry in index_entries])
 
         return await self.gen_objects(ids)
+
+    async def gen_ids_from_index(self, index, index_value):
+        ids = []
+        for shard in self._shards:
+            index_entries = await shard.gen_index_entries(index, index_value)
+            ids.extend([entry['target_id'] for entry in index_entries])
+        return ids

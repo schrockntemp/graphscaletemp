@@ -83,6 +83,7 @@ class GraphQLReport(GrappleType):
                     type=req(GraphQLID),
                     resolver=lambda obj, args, *_: obj.obj_id(*args),
                 ),
+                'provider': GraphQLField(type=GraphQLProvider.type()),
                 'reportRecordNumber': GraphQLField(
                     type=req(GraphQLInt),
                     resolver=lambda obj, args, *_: obj.report_record_number(*args),

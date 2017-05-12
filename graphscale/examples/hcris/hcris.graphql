@@ -64,6 +64,7 @@ input ReportCsvRow {
 
 type Report {
     id: ID!
+    provider: Provider
     reportRecordNumber: Int!
     providerNumber: Int!
     fiscalIntermediaryNumber: Int!
