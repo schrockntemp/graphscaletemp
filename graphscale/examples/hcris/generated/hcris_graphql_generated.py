@@ -70,6 +70,13 @@ class GraphQLProvider(GrappleType):
                     resolver=lambda obj, args, *_: obj.zip_code(*args),
                 ),
                 'county': GraphQLField(type=req(GraphQLString)),
+                'reports': GraphQLField(
+                    type=req(list_of(req(GraphQLReport.type()))),
+                    args={
+                        'after': GraphQLArgument(type=GraphQLID),
+                        'first': GraphQLArgument(type=GraphQLInt),
+                    },
+                ),
             },
         )
 

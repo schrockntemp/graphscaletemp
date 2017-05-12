@@ -1,5 +1,6 @@
-from graphscale.pent import Pent, PentConfig, create_pent
+from graphscale.pent import Pent, PentConfig, create_pent, PentContext
 from graphscale.utils import param_check, print_error
+from graphscale.kvetch import Kvetch
 
 from datetime import date
 
@@ -21,14 +22,11 @@ def parse_american_date(value):
     parts = value.split('/')
     return date(int(parts[2]), int(parts[0]), int(parts[1]))
 
-
 async def pent_from_index(context, pent_cls, index_name, value):
     obj_id = await context.kvetch().gen_id_from_index(index_name, value)
     if not obj_id:
         return None
     return await pent_cls.gen(context, obj_id)
-
-
 
 class Report(Pent):
     @staticmethod
@@ -43,14 +41,10 @@ class Report(Pent):
         return int(self._data['prvdr_num'])
 
     async def provider(self):
-        kvetch = self.kvetch()
-        obj_id = await kvetch.gen_id_from_index(
-            'Provider_provider_to_Provider_obj_id_index',
-            self._data['prvdr_num']
-        )
-        if not obj_id:
-            return None
-        return await Provider.gen(self.context(), obj_id)
+        # kvetch = self.kvetch()
+        # index_name = 'Provider_provider_to_Provider_obj_id_index'
+        # return await pent_from_index(self.context(), Provider, index_name, self._data['prvdr_num'])
+        return await Provider.gen(self.context(), self._data['provider_id'])
 
     def fiscal_intermediary_number(self):
         return self._data['fi_num']
@@ -70,11 +64,13 @@ class Report(Pent):
         raise Exception('unexpected code: ' + code)
 
 class Provider(Pent):
-
     @staticmethod
     # This method checks to see that data coming out of the database is valid
     def is_input_data_valid(_data):
         return True
+
+    def gen_reports(self, after, first):
+        pass
 
     def provider_number(self):
         return int(self._data['provider'])
@@ -128,6 +124,17 @@ class ProviderCsvRow:
     def data(self):
         return self._data
 
+class ReportCsvRow:
+    def __init__(self, data):
+        self._data = data
+
+    def provider_id(self, provider_id):
+        self._data['provider_id'] = provider_id
+        return self
+
+    def data(self):
+        return self._data
+
 def get_hcris_edge_config():
     return {}
 
@@ -140,6 +147,26 @@ def get_hcris_object_config():
 def get_hcris_config():
     return PentConfig(object_config=get_hcris_object_config(), edge_config=get_hcris_edge_config())
 
+def get_pent_context(kvetch):
+    param_check(kvetch, Kvetch, 'kvetch')
+    return PentContext(
+        kvetch=kvetch,
+        config=get_hcris_config(),
+    )
+
 async def create_provider(context, input_object):
+    param_check(context, PentContext, 'context')
+    param_check(input_object, ProviderCsvRow, 'input_object')
     return await create_pent(context, Provider, input_object)
 
+async def create_report(context, input_object):
+    param_check(context, PentContext, 'context')
+    param_check(input_object, ReportCsvRow, 'input_object')
+    index_name = 'Provider_provider_to_Provider_obj_id_index'
+    provider_number = input_object.data()['prvdr_num']
+    provider = await pent_from_index(context, Provider, index_name, provider_number)
+    if provider:
+        input_object.provider_id(provider.obj_id())
+
+    # get provider_id into report 
+    return await create_pent(context, Report, input_object)

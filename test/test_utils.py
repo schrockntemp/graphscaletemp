@@ -15,7 +15,9 @@ class MagnusConn:
         to the memory shards"""
         try:
             MagnusConn.get_unittest_conn()
-        except pymysql.err.OperationalError:
+        except pymysql.err.OperationalError as e:
+            print('failed')
+            print(e)
             return False
         return True
 

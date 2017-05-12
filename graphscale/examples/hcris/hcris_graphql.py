@@ -64,6 +64,9 @@ def create_browse_field(graphql_type, pent_type):
 class HcrisSchema:
     @staticmethod
     def graphql_schema():
+        report_type = GraphQLProvider.type()
+        report_type.fields['reports'].resolver = reports_resolver
+
         return GraphQLSchema(
             query=GraphQLObjectType(
                 name='Query',
@@ -87,6 +90,10 @@ class HcrisSchema:
 def create_hcris_schema():
     return HcrisSchema.graphql_schema()
 
+async def reports_resolver(provider, args, context, *_):
+    return []
+
 async def create_hospital_resolver(_parent, args, context, *_):
+    ## create 
     hospital_input = ProviderCsvRow(args['input'])
     return await create_provider(context, hospital_input)

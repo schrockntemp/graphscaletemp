@@ -161,7 +161,6 @@ def _kv_shard_get_objects(shard_conn, ids):
     with shard_conn.cursor() as cursor:
         cursor.execute(sql, [obj_id.bytes for obj_id in ids])
         rows = cursor.fetchall()
-
     ids_out = [UUID(bytes=row['obj_id']) for row in rows]
     obj_list = [row_to_obj(row) for row in rows]
     return OrderedDict(zip(ids_out, obj_list))

@@ -14,6 +14,14 @@ from graphscale.examples.hcris.hcris_db import (
     create_hcris_db_kvetch,
 )
 
+from graphscale.examples.hcris.hcris_pent import (
+    create_provider,
+    create_report,
+    ProviderCsvRow,
+    ReportCsvRow,
+    get_pent_context,
+)
+
 from graphscale.utils import execute_gen
 
 def create_kvetch():
@@ -27,6 +35,16 @@ def create_kvetch():
     # return init_hcris_db_kvetch(hcrisql_conn)
     return create_hcris_db_kvetch(hcrisql_conn)
 
+def init_kvetch():
+    hcrisql_conn = pymysql.connect(
+        host='localhost',
+        user='magnus',
+        password='magnus',
+        db='graphscale-hcrisql-db',
+        charset='utf8mb4',
+        cursorclass=pymysql.cursors.DictCursor)
+    return init_hcris_db_kvetch(hcrisql_conn)
+
 async def create_providers(filename):
     expected_header = [
         'provider', 'prvdr_num', 'fyb', 'fybstr', 'fye',
@@ -35,7 +53,7 @@ async def create_providers(filename):
 
     type_id = 100000 # hospital object
 
-    kvetch = create_kvetch()
+    pent_context = get_pent_context(create_kvetch())
     with open(filename, 'r') as csvfile:
         row_reader = csv.reader(csvfile, delimiter=',', quotechar='"')
         header = next(row_reader)
@@ -46,8 +64,9 @@ async def create_providers(filename):
         count = 0
         for data_row in row_reader:
             data = dict(zip(header, data_row))
-            new_id = await kvetch.gen_insert_object(type_id, data)
-            print('inserted provider ' + str(new_id) + ' num ' + str(count))
+            provider = await create_provider(pent_context, ProviderCsvRow(data=data))
+            # new_id = await kvetch.gen_insert_object(type_id, data)
+            print('inserted provider ' + str(provider.obj_id()) + ' num ' + str(count))
             count += 1
 
 
@@ -59,7 +78,7 @@ async def create_reports(filename):
         'proc_dt', 'fi_creat_dt', 'npr_dt', 'fi_rcpt_dt'
     ]
     type_id = 200000 # report objects
-    kvetch = create_kvetch()
+    pent_context = get_pent_context(create_kvetch())
     # report_count = {}
     with open(filename, 'r') as csvfile:
         row_reader = csv.reader(csvfile, delimiter=',', quotechar='"')
@@ -69,8 +88,9 @@ async def create_reports(filename):
         count = 0
         for data_row in row_reader:
             data = dict(zip(header, data_row))
-            new_id = await kvetch.gen_insert_object(type_id, data)
-            print('inserted report ' + str(new_id) + ' num ' + str(count))
+            report = await create_report(pent_context, ReportCsvRow(data=data))
+            # new_id = await kvetch.gen_insert_object(type_id, data)
+            print('inserted report ' + str(report.obj_id()) + ' num ' + str(count))
 
             count += 1
 
@@ -113,8 +133,8 @@ async def create_nmrc(filename):
         #     new_data = {'recs' : recs}
         #     total_bytes += len(data_to_body(new_data))
 
-        print(sorted(list(linecolset)))
-        print('length: ' + str(len(linecolset)))
+        # print(sorted(list(linecolset)))
+        # print('length: ' + str(len(linecolset)))
         # print('total bytes: ' + str(total_bytes))
 
 def try_parse_int(val):
@@ -229,6 +249,7 @@ def main_process():
 # start = timer()
 # end = timer()
 if __name__ == '__main__':
+    init_kvetch()
     # ~/data/hcris/providers/addr2552_10.csv
     execute_gen(create_providers('/Users/schrockn/data/hcris/providers/addr2552_10.csv'))
     # ~/data/hcris/2552-10/2016/hosp_rpt2552_10_2016.csv

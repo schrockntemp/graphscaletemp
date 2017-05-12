@@ -58,7 +58,7 @@ def db_single_edge_shard():
     shard = KvetchDbShard(
         pool=KvetchDbSingleConnectionPool(MagnusConn.get_unittest_conn()),
     )
-    indexes = {}
+    indexes = []
     edges = {
         'related_edge' : related_edge,
     }
@@ -78,7 +78,7 @@ def mem_edge_and_index_shard():
         indexed_attr='num',
     )
     edges = {'related_edge': related_edge}
-    indexes = {'num_index': num_index}
+    indexes = [num_index]
     return (KvetchMemShard(), edges, indexes)
 
 def db_edge_and_index_shard():
@@ -97,7 +97,7 @@ def db_edge_and_index_shard():
         pool=KvetchDbSingleConnectionPool(MagnusConn.get_unittest_conn()),
     )
     edges = {'related_edge': related_edge}
-    indexes = {'num_index': num_index}
+    indexes = [num_index]
     drop_shard_db_tables(shard, indexes)
     init_shard_db_tables(shard, indexes)
     return shard, edges, indexes
@@ -385,8 +385,7 @@ def test_string_index(test_shard_single_index):
     data_three = {'num': 5, 'related_id': id_one, 'text': 'third insert'}
     id_three = insert_test_obj(shard, data_three)
 
-    index_name = 'num_index'
-    num_index = indexes[index_name]
+    num_index = indexes[0]
     sync_kv_insert_index_entry(shard, num_index, 4, id_one)
     sync_kv_insert_index_entry(shard, num_index, 4, id_two)
     sync_kv_insert_index_entry(shard, num_index, 5, id_three)

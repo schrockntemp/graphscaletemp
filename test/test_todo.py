@@ -48,8 +48,8 @@ def db_context():
     shards = [KvetchDbShard(
         pool=KvetchDbSingleConnectionPool(MagnusConn.get_unittest_conn()),
     )]
-    drop_shard_db_tables(shards[0], {})
-    init_shard_db_tables(shards[0], {})
+    drop_shard_db_tables(shards[0], [])
+    init_shard_db_tables(shards[0], [])
     return PentContext(
         kvetch=Kvetch(shards=shards, edges=edges, indexes=[]),
         config=get_todo_config()
