@@ -158,7 +158,11 @@ class KvetchMemShard(KvetchShard):
 
     async def gen_edges(self, edge_definition, from_id, after=None, first=None):
         param_check(from_id, UUID, 'from_id')
-        edges = self._all_edges[edge_definition.edge_name()].get(from_id, [])
+        edge_name = edge_definition.edge_name()
+        if edge_name not in self._all_edges:
+            self._all_edges[edge_name] = {}
+
+        edges = self._all_edges[edge_name].get(from_id, [])
 
         if after:
             index = self.get_after_index(edges, after)

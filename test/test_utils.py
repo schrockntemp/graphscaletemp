@@ -1,5 +1,12 @@
+import asyncio
 import pymysql
 import pymysql.cursors
+import traceback
+
+from graphql import graphql
+from graphql.execution.executors.asyncio import AsyncioExecutor
+
+from graphscale.utils import param_check, print_error
 
 class MagnusConn:
     conns = {}
@@ -40,3 +47,31 @@ def db_mem_fixture(*, mem, db):
         fixture_funcs.append(db)
     fixture_funcs.append(mem)
     return fixture_funcs
+
+
+def execute_test_graphql(query, pent_context, graphql_schema):
+    param_check(query, str, 'query')
+    loop = asyncio.new_event_loop()
+    result = graphql(
+        graphql_schema,
+        query,
+        executor=AsyncioExecutor(loop=loop),
+        context_value=pent_context
+    )
+    if result.errors:
+        error = result.errors[0]
+        print_error('GRAPHQL ERROR')
+        print_error(error)
+        orig = error.original_error
+
+        print_error('ORIGINAL ERROR')
+        print_error(orig)
+
+        trace = orig.__traceback__
+        print_error(''.join(traceback.format_tb(trace)))
+        raise error
+    return result
+
+def exception_stacktrace(error):
+    trace = error.__traceback__
+    return ''.join(traceback.format_tb(trace))

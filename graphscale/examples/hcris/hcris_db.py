@@ -2,7 +2,7 @@ from graphscale.kvetch import Kvetch
 from graphscale.kvetch.kvetch_dbshard import (
     KvetchDbShard,
     KvetchDbSingleConnectionPool,
-    # KvetchDbEdgeDefinition,
+    KvetchDbEdgeDefinition,
     KvetchDbIndexDefinition,
 )
 
@@ -20,13 +20,20 @@ def get_indexes():
     )
     return [provider_index]
 
+def get_edges():
+    provider_to_report = KvetchDbEdgeDefinition(
+        edge_name='provider_to_report',
+        edge_id=93843948,
+        from_id_attr='provider_id',
+    )
+    return [provider_to_report]
+
 def init_hcris_db_kvetch(conn):
     shards = [KvetchDbShard(pool=KvetchDbSingleConnectionPool(conn))]
     indexes = get_indexes()
-
     drop_shard_db_tables(shards[0], indexes)
     init_shard_db_tables(shards[0], indexes)
-    return Kvetch(shards=shards, edges=[], indexes=indexes)
+    return Kvetch(shards=shards, edges=get_edges(), indexes=indexes)
 
 def create_hcris_db_kvetch(conn):
     shards = [KvetchDbShard(pool=KvetchDbSingleConnectionPool(conn))]

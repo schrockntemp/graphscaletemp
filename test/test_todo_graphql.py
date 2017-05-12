@@ -1,18 +1,33 @@
-import asyncio
 from uuid import UUID
 
-from graphql import graphql
-from graphscale.examples.todo.todo_graphql import create_todo_schema
+from graphql import (
+    graphql,
+    GraphQLSchema,
+    GraphQLObjectType,
+    GraphQLField,
+    GraphQLString,
+    GraphQLArgument,
+)
 
+from graphscale.examples.todo.todo_graphql import create_todo_schema
 from graphscale.examples.todo.todo_pents import (
     get_todo_config,
     create_todo_user,
     create_todo_item,
-    TodoUser,
     TodoUserInput,
-    TodoItem,
     TodoItemInput,
 )
+from graphscale.kvetch import Kvetch
+from graphscale.kvetch.kvetch_memshard import (
+    KvetchMemShard,
+    KvetchMemEdgeDefinition,
+)
+from graphscale.pent.pent import PentContext
+from graphscale.utils import execute_gen
+from test.test_utils import execute_test_graphql
+
+def execute_todo_query(query, pent_context):
+    return execute_test_graphql(query, pent_context, create_todo_schema())
 
 def create_fake_schema():
     return GraphQLSchema(
@@ -33,51 +48,6 @@ def create_fake_schema():
             },
         ),
     )
-
-from graphql import (
-    graphql,
-    GraphQLSchema,
-    GraphQLObjectType,
-    GraphQLField,
-    GraphQLString,
-    GraphQLArgument,
-)
-
-from graphscale.kvetch import Kvetch
-
-from graphscale.kvetch.kvetch_memshard import (
-    KvetchMemShard,
-    KvetchMemEdgeDefinition,
-)
-
-from graphscale.pent.pent import (
-    PentConfig,
-    PentContext,
-    Pent
-)
-
-from graphscale.utils import execute_gen, param_check
-
-from graphql.execution.executors.asyncio import AsyncioExecutor
-
-class TestContext:
-    pass
-
-def execute_todo_query(query, pent_context):
-    param_check(query, str, 'query')
-    param_check(pent_context, PentContext, 'pent_context')
-
-    loop = asyncio.new_event_loop()
-    result = graphql(
-        create_todo_schema(),
-        query,
-        executor=AsyncioExecutor(loop=loop),
-        context_value=pent_context
-    )
-    if result.errors:
-        print(result.errors[0])
-        raise Exception(str(result.errors))
-    return result
 
 def test_hello():
     query = '{ hello }'

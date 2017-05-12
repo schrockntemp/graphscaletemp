@@ -41,9 +41,6 @@ class Report(Pent):
         return int(self._data['prvdr_num'])
 
     async def provider(self):
-        # kvetch = self.kvetch()
-        # index_name = 'Provider_provider_to_Provider_obj_id_index'
-        # return await pent_from_index(self.context(), Provider, index_name, self._data['prvdr_num'])
         return await Provider.gen(self.context(), self._data['provider_id'])
 
     def fiscal_intermediary_number(self):
@@ -69,8 +66,9 @@ class Provider(Pent):
     def is_input_data_valid(_data):
         return True
 
-    def gen_reports(self, after, first):
-        pass
+    async def gen_reports(self, after=None, first=None):
+        edge_name = 'provider_to_report'
+        return await self.gen_associated_pents(Report, edge_name, after, first)
 
     def provider_number(self):
         return int(self._data['provider'])
@@ -166,6 +164,7 @@ async def create_report(context, input_object):
     provider_number = input_object.data()['prvdr_num']
     provider = await pent_from_index(context, Provider, index_name, provider_number)
     if provider:
+        print('SETTING provider_id')
         input_object.provider_id(provider.obj_id())
 
     # get provider_id into report 

@@ -4,27 +4,34 @@ from graphql import(
     GraphQLSchema,
     GraphQLObjectType,
     GraphQLField,
-    GraphQLInputObjectType,
-    GraphQLInputObjectField,
-    GraphQLString,
+    # GraphQLInputObjectType,
+    # GraphQLInputObjectField,
+    # GraphQLString,
     GraphQLArgument,
     GraphQLID,
     GraphQLInt,
 )
 
-from graphscale.grapple import GrappleType, req, list_of
+from graphscale.grapple import req, list_of
+from graphscale.utils import print_error
 
 from .generated.hcris_graphql_generated import (
     GraphQLProvider,
     GraphQLProviderCsvRow,
     GraphQLReport,
+    GraphQLReportCsvRow,
 )
-
-from graphscale.utils import print_error
 
 from .generated.hcris_graphql_generated import generated_query_fields
 
-from .hcris_pent import Provider, Report, ProviderCsvRow, create_provider
+from .hcris_pent import (
+    Provider,
+    Report,
+    ProviderCsvRow,
+    create_provider,
+    create_report,
+    ReportCsvRow,
+)
 
 def pent_map():
     return {
@@ -82,7 +89,11 @@ class HcrisSchema:
                     'createProvider' : define_create(
                         GraphQLProvider,
                         GraphQLProviderCsvRow,
-                        create_hospital_resolver),
+                        create_provider_resolver),
+                    'createReport' : define_create(
+                        GraphQLReport,
+                        GraphQLReportCsvRow,
+                        create_report_resolver),
                 },
             ),
         )
@@ -90,10 +101,21 @@ class HcrisSchema:
 def create_hcris_schema():
     return HcrisSchema.graphql_schema()
 
-async def reports_resolver(provider, args, context, *_):
-    return []
+async def reports_resolver(provider, args, *_):
+    try:
+        return await provider.gen_reports(after=args.get('after'), first=args.get('first'))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print_error(e)
+        return []
 
-async def create_hospital_resolver(_parent, args, context, *_):
-    ## create 
+async def create_provider_resolver(_parent, args, context, *_):
+    ## create
     hospital_input = ProviderCsvRow(args['input'])
     return await create_provider(context, hospital_input)
+
+async def create_report_resolver(_parent, args, context, *_):
+    ## create
+    report_input = ReportCsvRow(args['input'])
+    return await create_report(context, report_input)

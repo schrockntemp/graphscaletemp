@@ -50,7 +50,10 @@ class Kvetch:
         return self._index_dict[index_name]
 
     def get_edge_definition_by_name(self, edge_name):
-        return next(edge for edge in self._edge_dict.values() if edge.edge_name() == edge_name)
+        for edge in self._edge_dict.values():
+            if edge.edge_name() == edge_name:
+                return edge
+        raise Exception('edge %s not found in Kvetch' % edge_name)
 
     def get_shard_from_obj_id(self, obj_id):
         param_check(obj_id, UUID, 'obj_id')
@@ -97,7 +100,6 @@ class Kvetch:
                 continue
 
             attr = index.indexed_attr()
-           # print('attr %s data %s' % (attr, data))
             if not(attr in data) or not data[attr]:
                 continue
 
@@ -170,11 +172,8 @@ class Kvetch:
         return await self.gen_objects(ids)
 
     async def gen_id_from_index(self, index_name, index_value):
-        print_error('gen_id_from_index')
-        print_error('index_value: ' + str(index_value))
         index = self.get_index(index_name)
         ids = await self.gen_ids_from_index(index, index_value)
-        print_error('ids : ' + str(ids))
         if not ids:
             return None
 
