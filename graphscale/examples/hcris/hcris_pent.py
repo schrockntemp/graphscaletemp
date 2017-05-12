@@ -5,7 +5,7 @@ from datetime import date
 
 from enum import Enum, auto
 
-class HospitalStatus(Enum):
+class ProviderStatus(Enum):
     AS_SUBMITTED = auto()
     SETTLED = auto()
     AMENDED = auto()
@@ -53,7 +53,7 @@ class Report(Pent):
 
         raise Exception('unexpected code: ' + code)
 
-class Hospital(Pent):
+class Provider(Pent):
     @staticmethod
     # This method checks to see that data coming out of the database is valid
     def is_input_data_valid(_data):
@@ -70,16 +70,16 @@ class Hospital(Pent):
 
     def status(self):
         lookup = {
-            'As Submitted': HospitalStatus.AS_SUBMITTED,
-            'Settled': HospitalStatus.SETTLED,
-            'Amended': HospitalStatus.AMENDED,
-            'Settled w/Audit': HospitalStatus.SETTLED_WITH_AUDIT,
-            'Reopened': HospitalStatus.REOPENED,
+            'As Submitted': ProviderStatus.AS_SUBMITTED,
+            'Settled': ProviderStatus.SETTLED,
+            'Amended': ProviderStatus.AMENDED,
+            'Settled w/Audit': ProviderStatus.SETTLED_WITH_AUDIT,
+            'Reopened': ProviderStatus.REOPENED,
         }
         status_enum = lookup[self._data['status']]
         return status_enum
 
-    def hospital_name(self):
+    def name(self):
         return self._data['hosp_name']
 
     def street_address(self):
@@ -104,7 +104,7 @@ class Hospital(Pent):
         return self._data['county']
 
 # Consider if this is going to be a necessary abstraction
-class CreateHospitalInput:
+class ProviderCsvRow:
     def __init__(self, data):
         self._data = data
 
@@ -115,11 +115,11 @@ def get_hcris_edge_config():
     return {}
 
 def get_hcris_object_config():
-    return {100000: Hospital}
+    return {100000: Provider}
 
 def get_hcris_config():
     return PentConfig(object_config=get_hcris_object_config(), edge_config=get_hcris_edge_config())
 
-async def create_hospital(context, input_object):
-    return await create_pent(context, Hospital, input_object)
+async def create_provider(context, input_object):
+    return await create_pent(context, Provider, input_object)
 

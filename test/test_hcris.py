@@ -15,10 +15,10 @@ from graphql.execution.executors.asyncio import AsyncioExecutor
 from graphscale.examples.hcris.hcris_graphql import create_hcris_schema
 from graphscale.examples.hcris.hcris_pent import (
     get_hcris_config,
-    create_hospital,
-    CreateHospitalInput,
-    Hospital,
-    HospitalStatus,
+    create_provider,
+    ProviderCsvRow,
+    Provider,
+    ProviderStatus,
     Report,
     MedicareUtilizationLevel,
 )
@@ -40,9 +40,12 @@ def execute_query(query, pent_context, graphql_schema):
     )
     if result.errors:
         error = result.errors[0]
-        print('GraphQL Error:')
-        print(error)
-        raise error.original_error
+        import sys
+        sys.stderr.write('GraphQL Error:')
+        sys.stderr.write(str(error))
+        sys.stderr.write('Original Error:')
+        sys.stderr.write(str(error.original_error))
+        raise error
     return result
 
 def mem_context():
@@ -76,11 +79,11 @@ def test_hcris_pent_hospital_massaging():
     obj_id = uuid4()
     line = '100001,"100001",7/1/2015,"01-JUL-15",6/30/2016,"30-JUN-16","As Submitted",2,"SHANDS JACKSONVILLE MEDICAL CENTER","655 WEST 8TH STREET",,"JACKSONVILLE","FL","32209-","DUVAL"'
     data = create_test_hospital_data(line)
-    hospital = Hospital(mem_context(), obj_id, data)
+    hospital = Provider(mem_context(), obj_id, data)
     assert hospital.provider_number() == 100001
     assert hospital.fiscal_year_begin() == date(2015, 7, 1)
     assert hospital.fiscal_year_end() == date(2016, 6, 30)
-    assert hospital.status() == HospitalStatus.AS_SUBMITTED
+    assert hospital.status() == ProviderStatus.AS_SUBMITTED
 
 def test_browse_hospitals():
     graphql_schema = create_hcris_schema()
@@ -94,18 +97,18 @@ def test_browse_hospitals():
         persist_hospital_from_csv(line_three, pent_context, graphql_schema),
     ]
 
-    ids = [UUID(hex=data['createHospital']['id']) for data in datas]
+    ids = [UUID(hex=data['createProvider']['id']) for data in datas]
     id_first, id_second, id_third = tuple(sorted(ids))
 
-    all_hospitals = execute_gen(Hospital.gen_all(pent_context, None, None))
+    all_hospitals = execute_gen(Provider.gen_all(pent_context, None, None))
     all_ids = [hospital.obj_id() for hospital in all_hospitals]
     assert all_ids == [id_first, id_second, id_third]
 
-    after_one_hospitals = execute_gen(Hospital.gen_all(pent_context, after=id_first, first=None))
+    after_one_hospitals = execute_gen(Provider.gen_all(pent_context, after=id_first, first=None))
     after_one_ids = [hospital.obj_id() for hospital in after_one_hospitals]
     assert after_one_ids == [id_second, id_third]
 
-    after_one_first_one_hospitals = execute_gen(Hospital.gen_all(pent_context, after=id_first, first=1))
+    after_one_first_one_hospitals = execute_gen(Provider.gen_all(pent_context, after=id_first, first=1))
     after_one_first_one_ids = [hospital.obj_id() for hospital in after_one_first_one_hospitals]
     assert after_one_first_one_ids == [id_second]
 
@@ -113,7 +116,7 @@ def persist_hospital_from_csv(line, pent_context, graphql_schema):
     data = create_test_hospital_data(line)
     mutation_query = string.Template("""
     mutation {
-        createHospital(input: {
+        createProvider(input: {
             provider: "${provider}"
             fyb: "${fyb}"
             fye: "${fye}"
@@ -132,7 +135,7 @@ def persist_hospital_from_csv(line, pent_context, graphql_schema):
             fiscalYearBegin
             fiscalYearEnd
             status
-            hospitalName
+            name 
             streetAddress
             poBox
             city
@@ -151,13 +154,13 @@ def test_hcris_row_graphql():
     pent_context = mem_context()
     line = '100001,"100001",7/1/2015,"01-JUL-15",6/30/2016,"30-JUN-16","As Submitted",2,"SHANDS JACKSONVILLE MEDICAL CENTER","655 WEST 8TH STREET",,"JACKSONVILLE","FL","32209-","DUVAL"'
     out_data = persist_hospital_from_csv(line, pent_context, graphql_schema)
-    del out_data['createHospital']['id']
-    assert out_data['createHospital'] == {
+    del out_data['createProvider']['id']
+    assert out_data['createProvider'] == {
         'providerNumber': 100001,
         'fiscalYearBegin': '2015-07-01',
         'fiscalYearEnd': '2016-06-30',
         'status': 'AS_SUBMITTED',
-        'hospitalName': 'SHANDS JACKSONVILLE MEDICAL CENTER',
+        'name': 'SHANDS JACKSONVILLE MEDICAL CENTER',
         'streetAddress': '655 WEST 8TH STREET',
         'poBox': '',
         'city': 'JACKSONVILLE',

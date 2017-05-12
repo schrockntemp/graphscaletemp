@@ -28,16 +28,17 @@ from graphscale.grapple import (
     GraphQLDate,
 )
 
-class GraphQLHospital(GrappleType):
+class GraphQLProvider(GrappleType):
     @staticmethod
     def create_type():
         return GraphQLObjectType(
-            name='Hospital',
+            name='Provider',
             fields=lambda: {
                 'id': GraphQLField(
                     type=req(GraphQLID),
                     resolver=lambda obj, args, *_: obj.obj_id(*args),
                 ),
+                'name': GraphQLField(type=req(GraphQLString)),
                 'providerNumber': GraphQLField(
                     type=req(GraphQLInt),
                     resolver=lambda obj, args, *_: obj.provider_number(*args),
@@ -51,12 +52,8 @@ class GraphQLHospital(GrappleType):
                     resolver=lambda obj, args, *_: obj.fiscal_year_end(*args),
                 ),
                 'status': GraphQLField(
-                    type=req(GraphQLHospitalStatus.type()),
+                    type=req(GraphQLProviderStatus.type()),
                     resolver=lambda obj, args, *_: obj.status(*args).name if obj.status(*args) else None,
-                ),
-                'hospitalName': GraphQLField(
-                    type=req(GraphQLString),
-                    resolver=lambda obj, args, *_: obj.hospital_name(*args),
                 ),
                 'streetAddress': GraphQLField(
                     type=req(GraphQLString),
@@ -74,17 +71,46 @@ class GraphQLHospital(GrappleType):
                 ),
                 'county': GraphQLField(type=req(GraphQLString)),
             },
-            description="""
-This is a hospital as described in the csv file located here: http://www.nber.org/data/hcris.html
-See the table called "Cost Report" and see "Hospital Provider ID Info". The data comes from the "CSV" link 
-            """,
         )
 
-class GraphQLCreateHospitalInput(GrappleType):
+class GraphQLReport(GrappleType):
+    @staticmethod
+    def create_type():
+        return GraphQLObjectType(
+            name='Report',
+            fields=lambda: {
+                'id': GraphQLField(
+                    type=req(GraphQLID),
+                    resolver=lambda obj, args, *_: obj.obj_id(*args),
+                ),
+                'reportRecordNumber': GraphQLField(
+                    type=req(GraphQLInt),
+                    resolver=lambda obj, args, *_: obj.report_record_number(*args),
+                ),
+                'providerNumber': GraphQLField(
+                    type=req(GraphQLInt),
+                    resolver=lambda obj, args, *_: obj.provider_number(*args),
+                ),
+                'fiscalIntermediaryNumber': GraphQLField(
+                    type=req(GraphQLInt),
+                    resolver=lambda obj, args, *_: obj.fiscal_intermediary_number(*args),
+                ),
+                'processDate': GraphQLField(
+                    type=req(GraphQLDate.type()),
+                    resolver=lambda obj, args, *_: obj.process_date(*args),
+                ),
+                'medicareUtilizationLevel': GraphQLField(
+                    type=req(GraphQLMedicareUtilizationLevel.type()),
+                    resolver=lambda obj, args, *_: obj.medicare_utilization_level(*args).name if obj.medicare_utilization_level(*args) else None,
+                ),
+            },
+        )
+
+class GraphQLProviderCsvRow(GrappleType):
     @staticmethod
     def create_type():
         return GraphQLInputObjectType(
-            name='CreateHospitalInput',
+            name='ProviderCsvRow',
             fields=lambda: {
                 'provider': GraphQLInputObjectField(type=req(GraphQLString)),
                 'fyb': GraphQLInputObjectField(type=req(GraphQLString)),
@@ -92,20 +118,47 @@ class GraphQLCreateHospitalInput(GrappleType):
                 'status': GraphQLInputObjectField(type=req(GraphQLString)),
                 'ctrl_type': GraphQLInputObjectField(type=req(GraphQLString)),
                 'hosp_name': GraphQLInputObjectField(type=req(GraphQLString)),
-                'street_addr': GraphQLInputObjectField(type=req(GraphQLString)),
+                'street_addr': GraphQLInputObjectField(type=GraphQLString),
                 'po_box': GraphQLInputObjectField(type=GraphQLString),
                 'city': GraphQLInputObjectField(type=req(GraphQLString)),
                 'state': GraphQLInputObjectField(type=req(GraphQLString)),
                 'zip_code': GraphQLInputObjectField(type=req(GraphQLString)),
-                'county': GraphQLInputObjectField(type=req(GraphQLString)),
+                'county': GraphQLInputObjectField(type=GraphQLString),
             },
         )
 
-class GraphQLHospitalStatus(GrappleType):
+class GraphQLReportCsvRow(GrappleType):
+    @staticmethod
+    def create_type():
+        return GraphQLInputObjectType(
+            name='ReportCsvRow',
+            fields=lambda: {
+                'rpt_rec_num': GraphQLInputObjectField(type=req(GraphQLString)),
+                'prvdr_ctrl_type_cd': GraphQLInputObjectField(type=req(GraphQLString)),
+                'prvdr_num': GraphQLInputObjectField(type=req(GraphQLString)),
+                'rpt_stus_cd': GraphQLInputObjectField(type=req(GraphQLString)),
+                'initl_rpt_sw': GraphQLInputObjectField(type=req(GraphQLString)),
+                'last_rpt_sw': GraphQLInputObjectField(type=req(GraphQLString)),
+                'trnsmtl_num': GraphQLInputObjectField(type=req(GraphQLString)),
+                'fi_num': GraphQLInputObjectField(type=req(GraphQLString)),
+                'adr_vndr_cd': GraphQLInputObjectField(type=req(GraphQLString)),
+                'util_cd': GraphQLInputObjectField(type=req(GraphQLString)),
+                'spec_ind': GraphQLInputObjectField(type=GraphQLString),
+                'npi': GraphQLInputObjectField(type=GraphQLString),
+                'fy_bgn_dt': GraphQLInputObjectField(type=req(GraphQLString)),
+                'fy_end_dt': GraphQLInputObjectField(type=req(GraphQLString)),
+                'proc_dt': GraphQLInputObjectField(type=req(GraphQLString)),
+                'fi_creat_dt': GraphQLInputObjectField(type=req(GraphQLString)),
+                'npr_dt': GraphQLInputObjectField(type=GraphQLString),
+                'fi_rcpt_dt': GraphQLInputObjectField(type=req(GraphQLString)),
+            },
+        )
+
+class GraphQLProviderStatus(GrappleType):
     @staticmethod
     def create_type():
         return GraphQLEnumType(
-            name='HospitalStatus',
+            name='ProviderStatus',
             values={
                 'AS_SUBMITTED': GraphQLEnumValue(),
                 'SETTLED': GraphQLEnumValue(),
@@ -115,8 +168,21 @@ class GraphQLHospitalStatus(GrappleType):
             },
         )
 
+class GraphQLMedicareUtilizationLevel(GrappleType):
+    @staticmethod
+    def create_type():
+        return GraphQLEnumType(
+            name='MedicareUtilizationLevel',
+            values={
+                'NONE': GraphQLEnumValue(),
+                'LOW': GraphQLEnumValue(),
+                'FULL': GraphQLEnumValue(),
+            },
+        )
+
 def generated_query_fields(pent_map):
     return {
-        'hospital': define_top_level_getter(GraphQLHospital.type(), pent_map['Hospital']),
+        'provider': define_top_level_getter(GraphQLProvider.type(), pent_map['Provider']),
+        'report': define_top_level_getter(GraphQLReport.type(), pent_map['Report']),
     }
 

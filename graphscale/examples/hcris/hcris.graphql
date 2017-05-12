@@ -1,10 +1,10 @@
-type Hospital @generatePent {
+type Provider @generatePent {
     id: ID!
+    name: String!
     providerNumber: Int!
     fiscalYearBegin: Date!
     fiscalYearEnd: Date!
-    status: HospitalStatus!
-    hospitalName: String!
+    status: ProviderStatus!
     streetAddress: String!
     poBox: String!
     city: String!
@@ -14,13 +14,13 @@ type Hospital @generatePent {
 }
 
 # from ~/data/hcris/providers/addr2552_10.csv
-input HospitalCsvRow {
+input ProviderCsvRow {
     provider: String!
-    prvdr_num: String!
+    # prvdr_num: String!
     fyb: String!
-    fybstr: String!
+    # fybstr: String!
     fye: String!
-    fyestr: String!
+    # fyestr: String!
     status: String!
     ctrl_type: String!
     hosp_name: String!
@@ -32,7 +32,7 @@ input HospitalCsvRow {
     county: String
 }
 
-enum HospitalStatus {
+enum ProviderStatus {
     AS_SUBMITTED
     SETTLED
     AMENDED

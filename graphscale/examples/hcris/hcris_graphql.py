@@ -14,14 +14,15 @@ from graphql import(
 
 from graphscale.grapple import GrappleType, req, list_of
 
-from .generated.hcris_graphql_generated import GraphQLHospital, GraphQLCreateHospitalInput
+from .generated.hcris_graphql_generated import GraphQLProvider, GraphQLProviderCsvRow 
 from .generated.hcris_graphql_generated import generated_query_fields
 
-from .hcris_pent import Hospital, CreateHospitalInput, create_hospital
+from .hcris_pent import Provider, Report, ProviderCsvRow, create_provider
 
 def pent_map():
     return {
-        'Hospital': Hospital,
+        'Provider': Provider,
+        'Report': Report,
     }
 
 def define_create(out_type, in_type, resolver):
@@ -38,8 +39,8 @@ def create_hcris_schema():
         query=GraphQLObjectType(
             name='Query',
             fields=lambda: {**generated_query_fields(pent_map()), **{
-                'allHospitals': GraphQLField(
-                    type=req(list_of(req(GraphQLHospital.type()))),
+                'allProviders': GraphQLField(
+                    type=req(list_of(req(GraphQLProvider.type()))),
                     args={
                         'after': GraphQLArgument(type=GraphQLID),
                         'first': GraphQLArgument(type=GraphQLInt),
@@ -52,17 +53,17 @@ def create_hcris_schema():
         mutation=GraphQLObjectType(
             name='Mutation',
             fields=lambda: {
-                'createHospital' : define_create(
-                    GraphQLHospital,
-                    GraphQLCreateHospitalInput,
+                'createProvider' : define_create(
+                    GraphQLProvider,
+                    GraphQLProviderCsvRow,
                     create_hospital_resolver),
             },
         ),
     )
 
 async def create_hospital_resolver(_parent, args, context, *_):
-    hospital_input = CreateHospitalInput(args['input'])
-    return await create_hospital(context, hospital_input)
+    hospital_input = ProviderCsvRow(args['input'])
+    return await create_provider(context, hospital_input)
 
 async def all_hospitals_resolver(_parent, args, context, *_):
     try:
@@ -70,7 +71,7 @@ async def all_hospitals_resolver(_parent, args, context, *_):
         if args.get('after'):
             after = UUID(hex=args['after'])
         first = args.get('first')
-        return await Hospital.gen_all(context, after, first)
+        return await Provider.gen_all(context, after, first)
     except Exception as error:
         import sys
         sys.stderr.write(error)
