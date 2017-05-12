@@ -16,17 +16,9 @@ def get_indexes():
         indexed_attr='provider',
         indexed_type_id=100000, # Provider
         sql_type_of_index='CHAR(255)',
-        index_name='Provider_provider_index',
+        index_name='Provider_provider_to_Provider_obj_id_index',
     )
-
-    prvdr_num_index = KvetchDbIndexDefinition(
-        indexed_attr='prvdr_num',
-        indexed_type_id=200000, # Report
-        sql_type_of_index='CHAR(255)',
-        index_name='Report_prvdr_index',
-    )
-
-    return [provider_index, prvdr_num_index]
+    return [provider_index]
 
 def init_hcris_db_kvetch(conn):
     shards = [KvetchDbShard(pool=KvetchDbSingleConnectionPool(conn))]

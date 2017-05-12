@@ -1,5 +1,5 @@
 from graphscale.pent import Pent, PentConfig, create_pent
-from graphscale.utils import param_check
+from graphscale.utils import param_check, print_error
 
 from datetime import date
 
@@ -21,10 +21,14 @@ def parse_american_date(value):
     parts = value.split('/')
     return date(int(parts[2]), int(parts[0]), int(parts[1]))
 
-import sys
 
-def print_error(val):
-    sys.stderr.write(str(val) + '\n')
+async def pent_from_index(context, pent_cls, index_name, value):
+    obj_id = await context.kvetch().gen_id_from_index(index_name, value)
+    if not obj_id:
+        return None
+    return await pent_cls.gen(context, obj_id)
+
+
 
 class Report(Pent):
     @staticmethod
@@ -40,14 +44,15 @@ class Report(Pent):
 
     async def provider(self):
         kvetch = self.kvetch()
-        index = kvetch.get_index('Provider_provider_index')
-        ids = await kvetch.gen_ids_from_index(index, self._data['prvdr_num'])
-        if not ids:
+        obj_id = await kvetch.gen_id_from_index(
+            'Provider_provider_to_Provider_obj_id_index',
+            self._data['prvdr_num']
+        )
+        if not obj_id:
             return None
-        provider = await Provider.gen(self.context(), ids[0])
-        return provider
+        return await Provider.gen(self.context(), obj_id)
 
-    def fiscal_intrmediary_number(self):
+    def fiscal_intermediary_number(self):
         return self._data['fi_num']
 
     def process_date(self):
@@ -65,6 +70,7 @@ class Report(Pent):
         raise Exception('unexpected code: ' + code)
 
 class Provider(Pent):
+
     @staticmethod
     # This method checks to see that data coming out of the database is valid
     def is_input_data_valid(_data):

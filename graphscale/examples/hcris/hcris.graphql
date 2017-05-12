@@ -11,6 +11,7 @@ type Provider @generatePent {
     state: String!
     zipCode: String!
     county: String!
+    reports(after: ID, first: Int): [Report!]!
 }
 
 # from ~/data/hcris/providers/addr2552_10.csv

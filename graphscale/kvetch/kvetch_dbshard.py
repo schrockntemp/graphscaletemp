@@ -26,7 +26,6 @@ class KvetchDbSingleConnectionPool:
 class KvetchDbEdgeDefinition(KvetchEdgeDefinition):
     pass
 
-## TODO add index type
 class KvetchDbIndexDefinition(KvetchIndexDefinition):
     def __init__(self, *, index_name, indexed_type_id, indexed_attr, sql_type_of_index):
         param_check(index_name, str, 'index_name')
@@ -95,6 +94,10 @@ class KvetchDbShard(KvetchShard):
         self.check_insert_object_vars(new_id, type_id, data)
         _kv_shard_insert_object(self.conn(), new_id, type_id, data)
         return new_id
+
+    async def gen_insert_objects(self, new_ids, type_id, datas):
+        _kv_shard_insert_objects(new_ids, type_id, datas)
+        return new_ids
 
     async def gen_update_object(self, obj_id, data):
         param_check(obj_id, UUID, 'obj_id')
@@ -172,6 +175,19 @@ def _kv_shard_insert_object(shard_conn, new_id, type_id, data):
 
     shard_conn.commit()
     return new_id
+
+def _kv_shard_insert_objects(shard_conn, new_ids, type_id, datas):
+    assert len(new_ids) == len(datas)
+    insert_tuples = []
+    now = datetime.now()
+    sql = 'INSERT INTO kvetch_objects(obj_id, type_id, created, updated, body) '
+    sql += 'VALUES (%s, %s, %s, %s, %s)'
+    for new_id, data in zip(new_ids, datas):
+        insert_tuples.append((new_id.bytes, type_id, now, now, data_to_body(data)))
+    with shard_conn.cursor() as cursor:
+        cursor.executemany(sql, insert_tuples)
+    shard_conn.commit()
+    return new_ids 
 
 def _kv_shard_replace_object(shard_conn, obj_id, data):
     sql = 'UPDATE kvetch_objects '
@@ -253,14 +269,15 @@ def _kv_shard_get_index_entries(shard_conn, index_name, index_column, index_valu
     sql = 'SELECT %s FROM %s WHERE %s = ' % (target_column, index_name, index_column)
     sql += '%s'
     sql += ' ORDER BY %s' % target_column
-    # print(sql)
-    # print(type(index_value))
+    print(sql)
+    print(type(index_value))
+    print(index_value)
     rows = []
     with shard_conn.cursor() as cursor:
         cursor.execute(sql, (_to_sql_value(index_value)))
         rows = cursor.fetchall()
-        # print('rows')
-        # print(rows)
+        print('rows')
+        print(rows)
 
     for row in rows:
         row['target_id'] = UUID(bytes=row['target_id'])

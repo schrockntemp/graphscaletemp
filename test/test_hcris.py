@@ -174,7 +174,6 @@ def test_hcris_report():
     # type_id = 200000 # report objects
     line = '577257,"2","420011",1,"N","N","G","11001",4,"F",,,10/1/2015,12/31/2015,6/14/2016,6/1/2016,,5/25/2016'
     data = create_test_report_data(line)
-    print(data)
     report = Report(mem_context(), obj_id, data)
     assert report.obj_id() == obj_id
     assert report.report_record_number() == 577257

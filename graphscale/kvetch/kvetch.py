@@ -1,5 +1,5 @@
 from uuid import UUID, uuid4
-from graphscale.utils import param_check, async_array
+from graphscale.utils import param_check, async_array, print_error
 
 class KvetchShard:
     def check_insert_object_vars(self, new_id, type_id, data):
@@ -97,6 +97,7 @@ class Kvetch:
                 continue
 
             attr = index.indexed_attr()
+           # print('attr %s data %s' % (attr, data))
             if not(attr in data) or not data[attr]:
                 continue
 
@@ -105,6 +106,20 @@ class Kvetch:
             await indexed_shard.gen_insert_index_entry(index, indexed_value, new_id)
 
         return new_id
+
+    async def gen_insert_objects(self, type_id, datas):
+        param_check(datas, list, 'datas')
+        if len(self._shards) > 1:
+            raise Exception('shards > 1 currently not supported')
+
+        shard = self._shards[0]
+
+        new_ids = []
+        for _ in range(0, len(datas)):
+            new_ids.append(uuid4())
+
+        await shard.gen_insert_objects(new_ids, type_id, datas)
+        return new_ids
 
     async def gen_object(self, obj_id):
         param_check(obj_id, UUID, 'obj_id')
@@ -153,6 +168,17 @@ class Kvetch:
             ids.extend([entry['target_id'] for entry in index_entries])
 
         return await self.gen_objects(ids)
+
+    async def gen_id_from_index(self, index_name, index_value):
+        print_error('gen_id_from_index')
+        print_error('index_value: ' + str(index_value))
+        index = self.get_index(index_name)
+        ids = await self.gen_ids_from_index(index, index_value)
+        print_error('ids : ' + str(ids))
+        if not ids:
+            return None
+
+        return ids[0]
 
     async def gen_ids_from_index(self, index, index_value):
         ids = []

@@ -1,5 +1,6 @@
 import asyncio
 import traceback
+import sys
 
 def param_check(obj, ttype, param):
     stack_str = ''.join(traceback.format_stack())
@@ -27,3 +28,6 @@ async def async_array(coros):
 
 async def async_tuple(*coros):
     return tuple(await asyncio.gather(*coros))
+
+def print_error(val):
+    sys.stderr.write(str(val) + '\n')
