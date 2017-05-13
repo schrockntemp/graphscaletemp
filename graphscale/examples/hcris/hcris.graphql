@@ -93,7 +93,6 @@ type WorksheetEntry {
     column: String!
     subcolumn: String
     value: String
-    valueAsInt: Int
 }
 
 input WorksheetEntryInput {

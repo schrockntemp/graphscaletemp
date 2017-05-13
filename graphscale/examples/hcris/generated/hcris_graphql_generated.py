@@ -155,10 +155,6 @@ class GraphQLWorksheetEntry(GrappleType):
                 'column': GraphQLField(type=req(GraphQLString)),
                 'subcolumn': GraphQLField(type=GraphQLString),
                 'value': GraphQLField(type=GraphQLString),
-                'valueAsInt': GraphQLField(
-                    type=GraphQLInt,
-                    resolver=lambda obj, args, *_: obj.value_as_int(*args),
-                ),
             },
         )
 

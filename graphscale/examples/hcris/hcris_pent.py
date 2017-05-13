@@ -187,12 +187,6 @@ class WorksheetEntry:
         self.column, self.subcolumn = get_comps(column)
         self.value = value
 
-    def value_as_int(self):
-        return try_parse_int(self.value)
-
-    def value_as_float(self):
-        return try_parse_float(self.value)
-
 # Consider if this is going to be a necessary abstraction
 class ProviderCsvRow:
     def __init__(self, data):
