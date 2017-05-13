@@ -71,6 +71,7 @@ type Report {
     fiscalIntermediaryNumber: Int!
     processDate: Date!
     medicareUtilizationLevel: MedicareUtilizationLevel!
+    worksheetInstances(after: ID, first: Int): [WorksheetInstance!]!
 }
 
 enum MedicareUtilizationLevel {
@@ -90,8 +91,9 @@ type WorksheetEntry {
     line: String!
     subline: String
     column: String!
-    subline: String
+    subcolumn: String
     value: String
+    valueAsInt: Int
 }
 
 input WorksheetEntryInput {

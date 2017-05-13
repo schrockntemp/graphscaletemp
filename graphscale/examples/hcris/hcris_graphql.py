@@ -22,7 +22,7 @@ from .generated.hcris_graphql_generated import (
     GraphQLReportCsvRow,
 )
 
-from .generated.hcris_graphql_generated import generated_query_fields 
+from .generated.hcris_graphql_generated import generated_query_fields
 
 from .hcris_pent import (
     Provider,
@@ -75,8 +75,11 @@ def create_browse_field(graphql_type, pent_type):
 class HcrisSchema:
     @staticmethod
     def graphql_schema():
-        report_type = GraphQLProvider.type()
-        report_type.fields['reports'].resolver = reports_resolver
+        provider_type = GraphQLProvider.type()
+        provider_type.fields['reports'].resolver = reports_resolver
+
+        report_type = GraphQLReport.type()
+        report_type.fields['worksheetInstances'].resolver = worksheet_instances_resolver
 
         return GraphQLSchema(
             query=GraphQLObjectType(
@@ -104,6 +107,9 @@ class HcrisSchema:
 
 def create_hcris_schema():
     return HcrisSchema.graphql_schema()
+
+async def worksheet_instances_resolver(report, args, *_):
+    return await report.gen_worksheet_instances(after=args.get('after'), first=args.get('first'))
 
 async def reports_resolver(provider, args, *_):
     try:

@@ -83,6 +83,7 @@ class KvetchDbShard(KvetchShard):
         )
 
     async def gen_insert_edge(self, edge_definition, from_id, to_id, data=None):
+        # print('inserting edge. name: %s from_id: %s to_id %s' % (edge_definition.edge_name(), from_id, to_id))
         param_check(from_id, UUID, 'from_id')
         param_check(to_id, UUID, 'to_id')
         if data is None:

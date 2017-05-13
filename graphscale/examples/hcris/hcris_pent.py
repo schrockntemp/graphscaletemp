@@ -31,10 +31,15 @@ async def pent_from_index(context, pent_cls, index_name, value):
 class Report(Pent):
     @staticmethod
     # This method checks to see that data coming out of the database is valid
-    def is_input_data_valid(_data):
+    def is_input_data_valid(data):
+        if data['type_id'] != 200000:
+            raise Exception('invalid type for Report ' + str(data['type_id']))
         return True
 
     def report_record_number(self):
+        # print_error('IN METHOD Report.report_record_number')
+        # print_error(self._data)
+        #return int(self._data['report_record_number'])
         return int(self._data['rpt_rec_num'])
 
     def provider_number(self):
@@ -60,10 +65,16 @@ class Report(Pent):
 
         raise Exception('unexpected code: ' + code)
 
+    async def gen_worksheet_instances(self, after, first):
+        edge_name = 'report_to_worksheet_instance'
+        return await self.gen_associated_pents(WorksheetInstance, edge_name, after, first)
+
 class Provider(Pent):
     @staticmethod
     # This method checks to see that data coming out of the database is valid
-    def is_input_data_valid(_data):
+    def is_input_data_valid(data):
+        if data['type_id'] != 100000:
+            raise Exception('invalid type for Provider ' + str(data['type_id']))
         return True
 
     async def gen_reports(self, after=None, first=None):
@@ -115,27 +126,72 @@ class Provider(Pent):
         return self._data['county']
 
 class WorksheetInstance(Pent):
+    @staticmethod
+    # This method checks to see that data coming out of the database is valid
+    def is_input_data_valid(data):
+        if data['type_id'] != 300000:
+            raise Exception('invalid type for WorksheetInstance' + str(data['type_id']))
+        return True
+
     def report_record_number(self):
-        return self._data['rpt_rec_num']
+        # print_error('IN METHOD WorksheetInstance.report_record_number')
+        # print_error(self._data)
+        return self._data['report_record_number']
 
     def worksheet_code(self):
-        return self._data['wksht_cd']
+        return self._data['worksheet_code']
+
+    def entries(self):
+        entries = []
+        for entry_data in self._data['worksheet_entries']:
+            line = entry_data['line']
+            column = entry_data['column']
+            value = entry_data['value']
+            entries.append(WorksheetEntry(line, column, value))
+        return entries
+
+def get_num_and_sub(string):
+    return (string[0:3], string[-2:])
+
+def chopzeros(string):
+    if string.startswith('00'):
+        return string[2:]
+    if string.startswith('0'):
+        return string[1:]
+    return string
+
+def get_comps(string):
+    major, minor = get_num_and_sub(string)
+    major = chopzeros(major)
+    minor = chopzeros(minor)
+    if minor == '':
+        return (major, None)
+    return (major, minor)
+
+def try_parse_int(value):
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+def try_parse_float(value):
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
 
 class WorksheetEntry:
-    def line(self):
-        pass
+    def __init__(self, line, column, value):
+        self.line, self.subline = get_comps(line)
+        self.column, self.subcolumn = get_comps(column)
+        self.value = value
 
-    def subline(self):
-        pass
+    def value_as_int(self):
+        return try_parse_int(self.value)
 
-    def column(self):
-        pass
-
-    def subcolumn(self):
-        pass
-
-    def value(self):
-        pass
+    def value_as_float(self):
+        return try_parse_float(self.value)
 
 # Consider if this is going to be a necessary abstraction
 class ProviderCsvRow:
@@ -156,6 +212,17 @@ class ReportCsvRow:
     def data(self):
         return self._data
 
+class CreateWorksheetInstanceInput:
+    def __init__(self, data):
+        self._data = data
+
+    def report_id(self, report_id):
+        self._data['report_id'] = report_id
+        return self
+
+    def data(self):
+        return self._data
+
 def get_hcris_edge_config():
     return {}
 
@@ -163,6 +230,7 @@ def get_hcris_object_config():
     return {
         100000: Provider,
         200000: Report,
+        300000: WorksheetInstance,
     }
 
 def get_hcris_config():
@@ -183,6 +251,7 @@ async def create_provider(context, input_object):
 async def create_report(context, input_object):
     param_check(context, PentContext, 'context')
     param_check(input_object, ReportCsvRow, 'input_object')
+
     index_name = 'provider_number_index'
     provider_number = input_object.data()['prvdr_num']
     provider = await pent_from_index(context, Provider, index_name, provider_number)
@@ -190,3 +259,15 @@ async def create_report(context, input_object):
         input_object.provider_id(provider.obj_id())
 
     return await create_pent(context, Report, input_object)
+
+async def create_worksheet_instance(context, input_object):
+    param_check(context, PentContext, 'context')
+    param_check(input_object, CreateWorksheetInstanceInput, 'input_object')
+
+    index_name = 'report_record_number_index'
+    record_number = input_object.data()['report_record_number']
+    report = await pent_from_index(context, Report, index_name, record_number)
+    if report:
+        input_object.report_id(report.obj_id())
+
+    return await create_pent(context, WorksheetInstance, input_object)

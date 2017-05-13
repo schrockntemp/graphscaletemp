@@ -17,9 +17,11 @@ from graphscale.examples.hcris.hcris_db import (
 from graphscale.examples.hcris.hcris_pent import (
     create_provider,
     create_report,
+    create_worksheet_instance,
     ProviderCsvRow,
     ReportCsvRow,
     get_pent_context,
+    CreateWorksheetInstanceInput,
 )
 
 from graphscale.utils import execute_gen
@@ -160,7 +162,7 @@ def prettysub(string):
     if minor == 0:
         return str(major)
     return str(major) + '.' + str(minor)
-    
+
 def process_nmrc(filename):
     expected_header = ['rpt_rec_num', 'wksht_cd', 'line_num', 'clmn_num', 'itm_val_num']
     records = []
@@ -174,8 +176,8 @@ def process_nmrc(filename):
             records.append((
                 data['rpt_rec_num'],
                 data['wksht_cd'],
-                prettysub(data['line_num']),
-                prettysub(data['clmn_num']),
+                data['line_num'],
+                data['clmn_num'],
                 data['itm_val_num'],
             ))
 
@@ -195,8 +197,8 @@ def process_alpha(filename):
             records.append((
                 data['rpt_rec_num'],
                 data['wksht_cd'],
-                prettysub(data['line_num']),
-                prettysub(data['clmn_num']),
+                data['line_num'],
+                data['clmn_num'],
                 data['alphnmrc_itm_txt'],
             ))
     return records
@@ -229,32 +231,55 @@ def safe_add(matrix, record):
         matrix[key] = []
     matrix[key].append((line, column, value))
 
-def build_worksheets(records):
+async def build_worksheets(records):
     # (report, worksheet) => [(line, column, value)]
     matrix = OrderedDict()
     records = sorted(records, key=lambda k: k[0]+':'+k[1])
     for record in records:
         safe_add(matrix, record)
 
-    for key, value in matrix.items():
-        report, worksheet = key
-        print('report %s worksheet %s item count: %s' % (report, worksheet, len(value)))
+    pent_context = get_pent_context(create_kvetch())
 
-def process_records():
+    count = 0
+    for key, entries in matrix.items():
+        report, worksheet = key
+
+        print('report %s worksheet %s item count: %s' % (report, worksheet, len(entries)))
+
+        worksheet_entries = []
+        for entry in entries:
+            worksheet_entries.append({
+                'line': entry[0],
+                'column': entry[1],
+                'value': entry[2]
+            })
+        data = {
+            'report_record_number': report,
+            'worksheet_code': worksheet,
+            'worksheet_entries': worksheet_entries,
+        }
+
+        print('bytes ' + str(len(data_to_body(data))))
+        worksheet = await create_worksheet_instance(pent_context, CreateWorksheetInstanceInput(data=data))
+        print('new worksheet ' + str(worksheet.obj_id()))
+        count += 1
+        print('num ' + str(count))
+
+async def create_worksheet_entries():
     records = process_alpha('/Users/schrockn/data/hcris/2552-10/2016/hosp_alpha2552_10_2016_long.csv')
     records.extend(process_nmrc('/Users/schrockn/data/hcris/2552-10/2016/hosp_nmrc2552_10_2016_long.csv'))
-    build_worksheets(records)
+    await build_worksheets(records)
 
 # from timeit import default_timer as timer
 # start = timer()
 # end = timer()
 if __name__ == '__main__':
-    #init_kvetch()
+    init_kvetch()
     # ~/data/hcris/providers/addr2552_10.csv
     execute_gen(create_providers('/Users/schrockn/data/hcris/providers/addr2552_10.csv'))
     # ~/data/hcris/2552-10/2016/hosp_rpt2552_10_2016.csv
     execute_gen(create_reports('/Users/schrockn/data/hcris/2552-10/2016/hosp_rpt2552_10_2016.csv'))
     # /Users/schrockn/data/hcris/2552-10/2016/hosp_nmrc2552_10_2016_long.csv
     # execute_gen(create_nmrc('/Users/schrockn/data/hcris/2552-10/2016/hosp_nmrc2552_10_2016_long.csv'))
-    process_records()
+    execute_gen(create_worksheet_entries())
 

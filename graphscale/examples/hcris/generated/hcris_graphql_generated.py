@@ -111,6 +111,14 @@ class GraphQLReport(GrappleType):
                     type=req(GraphQLMedicareUtilizationLevel.type()),
                     resolver=lambda obj, args, *_: obj.medicare_utilization_level(*args).name if obj.medicare_utilization_level(*args) else None,
                 ),
+                'worksheetInstances': GraphQLField(
+                    type=req(list_of(req(GraphQLWorksheetInstance.type()))),
+                    args={
+                        'after': GraphQLArgument(type=GraphQLID),
+                        'first': GraphQLArgument(type=GraphQLInt),
+                    },
+                    resolver=lambda obj, args, *_: obj.worksheet_instances(*args),
+                ),
             },
         )
 
@@ -145,8 +153,12 @@ class GraphQLWorksheetEntry(GrappleType):
                 'line': GraphQLField(type=req(GraphQLString)),
                 'subline': GraphQLField(type=GraphQLString),
                 'column': GraphQLField(type=req(GraphQLString)),
-                'subline': GraphQLField(type=GraphQLString),
+                'subcolumn': GraphQLField(type=GraphQLString),
                 'value': GraphQLField(type=GraphQLString),
+                'valueAsInt': GraphQLField(
+                    type=GraphQLInt,
+                    resolver=lambda obj, args, *_: obj.value_as_int(*args),
+                ),
             },
         )
 
