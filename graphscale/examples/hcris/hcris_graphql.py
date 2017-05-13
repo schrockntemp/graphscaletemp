@@ -22,7 +22,7 @@ from .generated.hcris_graphql_generated import (
     GraphQLReportCsvRow,
 )
 
-from .generated.hcris_graphql_generated import generated_query_fields
+from .generated.hcris_graphql_generated import generated_query_fields 
 
 from .hcris_pent import (
     Provider,
@@ -31,13 +31,9 @@ from .hcris_pent import (
     create_provider,
     create_report,
     ReportCsvRow,
+    WorksheetEntry,
+    WorksheetInstance,
 )
-
-def pent_map():
-    return {
-        'Provider': Provider,
-        'Report': Report,
-    }
 
 def define_create(out_type, in_type, resolver):
     return GraphQLField(
@@ -47,6 +43,14 @@ def define_create(out_type, in_type, resolver):
         },
         resolver=resolver,
     )
+
+def pent_map():
+    return {
+        'Provider': Provider,
+        'Report': Report,
+        'WorksheetInstance': WorksheetInstance,
+        'WorksheetEntry': WorksheetEntry,
+    }
 
 def create_browse_field(graphql_type, pent_type):
     async def browse_resolver(_parent, args, context, *_):

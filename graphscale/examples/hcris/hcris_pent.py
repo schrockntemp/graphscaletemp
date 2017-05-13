@@ -187,8 +187,6 @@ async def create_report(context, input_object):
     provider_number = input_object.data()['prvdr_num']
     provider = await pent_from_index(context, Provider, index_name, provider_number)
     if provider:
-        print('SETTING provider_id')
         input_object.provider_id(provider.obj_id())
 
-    # get provider_id into report 
     return await create_pent(context, Report, input_object)

@@ -64,6 +64,15 @@ def gengraphql(file):
     print(defs)
     print(print_graphql_top_level(ast))
 
+    # move to the pent generation step when that happens
+    # print('def pent_map():')
+    # print('    return {')
+    # for object_type in ast.object_types():
+    #     name = object_type.name()
+    #     print("        '%s': %s," % (name, name))
+    # print('    }')
+    # print('')
+
 if __name__ == '__main__':
     cli.add_command(genpents)
     cli.add_command(gengraphql)

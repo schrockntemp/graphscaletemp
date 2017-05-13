@@ -114,6 +114,38 @@ class GraphQLReport(GrappleType):
             },
         )
 
+class GraphQLWorksheetInstance(GrappleType):
+    @staticmethod
+    def create_type():
+        return GraphQLObjectType(
+            name='WorksheetInstance',
+            fields=lambda: {
+                'reportRecordNumber': GraphQLField(
+                    type=req(GraphQLInt),
+                    resolver=lambda obj, args, *_: obj.report_record_number(*args),
+                ),
+                'worksheetCode': GraphQLField(
+                    type=req(GraphQLString),
+                    resolver=lambda obj, args, *_: obj.worksheet_code(*args),
+                ),
+                'entries': GraphQLField(type=req(list_of(req(GraphQLWorksheetEntry.type())))),
+            },
+        )
+
+class GraphQLWorksheetEntry(GrappleType):
+    @staticmethod
+    def create_type():
+        return GraphQLObjectType(
+            name='WorksheetEntry',
+            fields=lambda: {
+                'line': GraphQLField(type=req(GraphQLString)),
+                'subline': GraphQLField(type=GraphQLString),
+                'column': GraphQLField(type=req(GraphQLString)),
+                'subline': GraphQLField(type=GraphQLString),
+                'value': GraphQLField(type=GraphQLString),
+            },
+        )
+
 class GraphQLProviderCsvRow(GrappleType):
     @staticmethod
     def create_type():
@@ -162,6 +194,30 @@ class GraphQLReportCsvRow(GrappleType):
             },
         )
 
+class GraphQLWorksheetEntryInput(GrappleType):
+    @staticmethod
+    def create_type():
+        return GraphQLInputObjectType(
+            name='WorksheetEntryInput',
+            fields=lambda: {
+                'line': GraphQLInputObjectField(type=req(GraphQLString)),
+                'column': GraphQLInputObjectField(type=req(GraphQLString)),
+                'value': GraphQLInputObjectField(type=req(GraphQLString)),
+            },
+        )
+
+class GraphQLCreateWorksheetInstanceInput(GrappleType):
+    @staticmethod
+    def create_type():
+        return GraphQLInputObjectType(
+            name='CreateWorksheetInstanceInput',
+            fields=lambda: {
+                'reportRecordNumber': GraphQLInputObjectField(type=req(GraphQLInt)),
+                'worksheetCode': GraphQLInputObjectField(type=req(GraphQLString)),
+                'worksheetEntries': GraphQLInputObjectField(type=req(list_of(req(GraphQLWorksheetEntryInput.type())))),
+            },
+        )
+
 class GraphQLProviderStatus(GrappleType):
     @staticmethod
     def create_type():
@@ -192,5 +248,15 @@ def generated_query_fields(pent_map):
     return {
         'provider': define_top_level_getter(GraphQLProvider.type(), pent_map['Provider']),
         'report': define_top_level_getter(GraphQLReport.type(), pent_map['Report']),
+        'worksheetInstance': define_top_level_getter(GraphQLWorksheetInstance.type(), pent_map['WorksheetInstance']),
+        'worksheetEntry': define_top_level_getter(GraphQLWorksheetEntry.type(), pent_map['WorksheetEntry']),
+    }
+
+def pent_map():
+    return {
+        'Provider': Provider,
+        'Report': Report,
+        'WorksheetInstance': WorksheetInstance,
+        'WorksheetEntry': WorksheetEntry,
     }
 
