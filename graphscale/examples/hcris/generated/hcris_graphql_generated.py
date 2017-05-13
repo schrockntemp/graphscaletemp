@@ -252,11 +252,3 @@ def generated_query_fields(pent_map):
         'worksheetEntry': define_top_level_getter(GraphQLWorksheetEntry.type(), pent_map['WorksheetEntry']),
     }
 
-def pent_map():
-    return {
-        'Provider': Provider,
-        'Report': Report,
-        'WorksheetInstance': WorksheetInstance,
-        'WorksheetEntry': WorksheetEntry,
-    }
-
