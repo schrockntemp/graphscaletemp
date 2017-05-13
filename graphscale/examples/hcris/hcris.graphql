@@ -80,6 +80,7 @@ enum MedicareUtilizationLevel {
 }
 
 type WorksheetInstance {
+    id: ID!
     reportRecordNumber: Int!
     worksheetCode: String!
     entries: [WorksheetEntry!]!

@@ -120,6 +120,10 @@ class GraphQLWorksheetInstance(GrappleType):
         return GraphQLObjectType(
             name='WorksheetInstance',
             fields=lambda: {
+                'id': GraphQLField(
+                    type=req(GraphQLID),
+                    resolver=lambda obj, args, *_: obj.obj_id(*args),
+                ),
                 'reportRecordNumber': GraphQLField(
                     type=req(GraphQLInt),
                     resolver=lambda obj, args, *_: obj.report_record_number(*args),
@@ -249,6 +253,5 @@ def generated_query_fields(pent_map):
         'provider': define_top_level_getter(GraphQLProvider.type(), pent_map['Provider']),
         'report': define_top_level_getter(GraphQLReport.type(), pent_map['Report']),
         'worksheetInstance': define_top_level_getter(GraphQLWorksheetInstance.type(), pent_map['WorksheetInstance']),
-        'worksheetEntry': define_top_level_getter(GraphQLWorksheetEntry.type(), pent_map['WorksheetEntry']),
     }
 

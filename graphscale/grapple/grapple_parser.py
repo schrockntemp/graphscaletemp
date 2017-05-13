@@ -54,6 +54,8 @@ def print_graphql_top_level(document_ast):
     writer.line('return {')
     writer.increase_indent() # dictionary body
     for grapple_type in document_ast.object_types():
+        if not grapple_type.has_field('id'): # needs to be fetchable
+            continue
         field_name = uncapitalized(grapple_type.name())
         graphql_type_inst = 'GraphQL%s.type()' % grapple_type.name()
         writer.line("'%s': define_top_level_getter(%s, pent_map['%s'])," %
@@ -274,6 +276,12 @@ class GrappleTypeDefinition:
 
     def name(self):
         return self._name
+
+    def has_field(self, name):
+        for field in self._fields:
+            if field.name() == name:
+                return True
+        return False 
 
     def fields(self):
         return self._fields
