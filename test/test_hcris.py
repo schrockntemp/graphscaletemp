@@ -46,7 +46,7 @@ def mem_context():
         from_id_attr='provider_id',
     )
     index = KvetchMemIndexDefinition(
-        index_name='Provider_provider_to_Provider_obj_id_index',
+        index_name='provider_number_index',
         indexed_type_id=100000, # Provider
         indexed_attr='provider'
     )

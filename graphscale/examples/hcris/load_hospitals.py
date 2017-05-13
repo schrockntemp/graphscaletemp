@@ -161,11 +161,6 @@ def prettysub(string):
         return str(major)
     return str(major) + '.' + str(minor)
     
-def safe_add(matrix, line, column, value):
-    if line not in matrix:
-        matrix[line] = OrderedDict()
-    matrix[line][column] = value
-
 def process_nmrc(filename):
     expected_header = ['rpt_rec_num', 'wksht_cd', 'line_num', 'clmn_num', 'itm_val_num']
     records = []
@@ -227,34 +222,39 @@ def process_alpha(filename):
         #     for column, value in columns.items():
         #         print('%s:%s => %s' % (prettysub(line), prettysub(column), value))
 
-def build_worksheet(worksheet, report_num, records):
+def safe_add(matrix, record):
+    report, worksheet, line, column, value = record
+    key = (report, worksheet)
+    if key not in matrix:
+        matrix[key] = []
+    matrix[key].append((line, column, value))
+
+def build_worksheets(records):
+    # (report, worksheet) => [(line, column, value)]
     matrix = OrderedDict()
+    records = sorted(records, key=lambda k: k[0]+':'+k[1])
     for record in records:
-        if record[0] == report_num and record[1] == worksheet:
-            _, _, line, column, value = record
-            safe_add(matrix, line, column, value)
+        safe_add(matrix, record)
 
-    for line, columns in matrix.items():
-        chunks_to_print = []
-        for column, value in columns.items():
-            chunks_to_print.append('%s:%s => %s' % (line, column, value))
-        print(', '.join(chunks_to_print))
+    for key, value in matrix.items():
+        report, worksheet = key
+        print('report %s worksheet %s item count: %s' % (report, worksheet, len(value)))
 
-def main_process():
+def process_records():
     records = process_alpha('/Users/schrockn/data/hcris/2552-10/2016/hosp_alpha2552_10_2016_long.csv')
     records.extend(process_nmrc('/Users/schrockn/data/hcris/2552-10/2016/hosp_nmrc2552_10_2016_long.csv'))
-    build_worksheet('A800000', '577257', records)
+    build_worksheets(records)
 
 # from timeit import default_timer as timer
 # start = timer()
 # end = timer()
 if __name__ == '__main__':
-    init_kvetch()
+    #init_kvetch()
     # ~/data/hcris/providers/addr2552_10.csv
     execute_gen(create_providers('/Users/schrockn/data/hcris/providers/addr2552_10.csv'))
     # ~/data/hcris/2552-10/2016/hosp_rpt2552_10_2016.csv
     execute_gen(create_reports('/Users/schrockn/data/hcris/2552-10/2016/hosp_rpt2552_10_2016.csv'))
     # /Users/schrockn/data/hcris/2552-10/2016/hosp_nmrc2552_10_2016_long.csv
     # execute_gen(create_nmrc('/Users/schrockn/data/hcris/2552-10/2016/hosp_nmrc2552_10_2016_long.csv'))
-    #main_process()
+    process_records()
 

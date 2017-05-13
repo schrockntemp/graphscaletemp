@@ -69,6 +69,7 @@ def execute_test_graphql(query, pent_context, graphql_schema):
 
         trace = orig.__traceback__
         print_error(''.join(traceback.format_tb(trace)))
+
         raise error
     return result
 

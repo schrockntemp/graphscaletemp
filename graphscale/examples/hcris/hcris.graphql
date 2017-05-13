@@ -78,3 +78,29 @@ enum MedicareUtilizationLevel {
     LOW
     FULL
 }
+
+type WorksheetInstance {
+    reportRecordNumber: Int!
+    worksheetCode: String!
+    entries: [WorksheetEntry!]!
+}
+
+type WorksheetEntry {
+    line: String!
+    subline: String
+    column: String!
+    subline: String
+    value: String
+}
+
+input WorksheetEntryInput {
+    line: String!
+    column: String!
+    value: String!
+}
+
+input CreateWorksheetInstanceInput {
+    reportRecordNumber: Int!
+    worksheetCode: String!
+    worksheetEntries: [WorksheetEntryInput!]!
+} 

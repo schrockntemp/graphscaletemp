@@ -114,6 +114,29 @@ class Provider(Pent):
     def county(self):
         return self._data['county']
 
+class WorksheetInstance(Pent):
+    def report_record_number(self):
+        return self._data['rpt_rec_num']
+
+    def worksheet_code(self):
+        return self._data['wksht_cd']
+
+class WorksheetEntry:
+    def line(self):
+        pass
+
+    def subline(self):
+        pass
+
+    def column(self):
+        pass
+
+    def subcolumn(self):
+        pass
+
+    def value(self):
+        pass
+
 # Consider if this is going to be a necessary abstraction
 class ProviderCsvRow:
     def __init__(self, data):
@@ -160,7 +183,7 @@ async def create_provider(context, input_object):
 async def create_report(context, input_object):
     param_check(context, PentContext, 'context')
     param_check(input_object, ReportCsvRow, 'input_object')
-    index_name = 'Provider_provider_to_Provider_obj_id_index'
+    index_name = 'provider_number_index'
     provider_number = input_object.data()['prvdr_num']
     provider = await pent_from_index(context, Provider, index_name, provider_number)
     if provider:
